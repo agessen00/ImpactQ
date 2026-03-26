@@ -1870,25 +1870,27 @@ function App() {
                 marginBottom: '24px'
               }}>
                 {growthStages.map((s, i) => (
-                  <div key={s.status} style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    animation: `slideIn 0.4s ease-out ${i * 0.08}s both`
-                  }}>
-                    <div style={{ marginBottom: '8px' }}>
-                      <StatusIcon status={s.status} size={48} />
-                    </div>
-                    <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--charcoal)' }}>
-                      {s.label}
-                    </div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                      {s.desc}
+                  <React.Fragment key={s.status}>
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      animation: `slideIn 0.4s ease-out ${i * 0.08}s both`
+                    }}>
+                      <div style={{ marginBottom: '8px' }}>
+                        <StatusIcon status={s.status} size={48} />
+                      </div>
+                      <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--charcoal)' }}>
+                        {s.label}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                        {s.desc}
+                      </div>
                     </div>
                     {i < growthStages.length - 1 && !isMobile && (
-                      <span style={{ position: 'absolute', right: '-24px', top: '20px', color: 'var(--text-muted)', fontSize: '14px' }}>→</span>
+                      <span style={{ color: 'var(--text-muted)', fontSize: '18px', alignSelf: 'center', marginTop: '-8px' }}>→</span>
                     )}
-                  </div>
+                  </React.Fragment>
                 ))}
               </div>
 
@@ -1911,6 +1913,73 @@ function App() {
                   cursor: 'pointer', fontWeight: 500, transition: 'all var(--transition)'
                 }}>+ Create a New Plan</button>
               </div>
+
+              {/* Daily Wisdom Quote */}
+              {(() => {
+                const quotes = [
+                  { text: "The creation of a thousand forests is in one acorn.", author: "Ralph Waldo Emerson" },
+                  { text: "Change is the law of life. And those who look only to the past or present are certain to miss the future.", author: "John F. Kennedy" },
+                  { text: "A goal without a plan is just a wish.", author: "Antoine de Saint-Exupéry" },
+                  { text: "In the middle of difficulty lies opportunity.", author: "Albert Einstein" },
+                  { text: "The best time to plant a tree was twenty years ago. The second best time is now.", author: "Chinese Proverb" },
+                  { text: "Plans are nothing; planning is everything.", author: "Dwight D. Eisenhower" },
+                  { text: "What we plant in the soil of contemplation, we shall reap in the harvest of action.", author: "Meister Eckhart" },
+                  { text: "Progress is impossible without change, and those who cannot change their minds cannot change anything.", author: "George Bernard Shaw" },
+                  { text: "Even the smallest seed holds the promise of an entire forest.", author: "Matshona Dhliwayo" },
+                  { text: "By failing to prepare, you are preparing to fail.", author: "Benjamin Franklin" },
+                  { text: "Adopt the pace of nature: her secret is patience.", author: "Ralph Waldo Emerson" },
+                  { text: "Strategy is about making choices, trade-offs; it's about deliberately choosing to be different.", author: "Michael Porter" },
+                  { text: "A flower does not think of competing with the flower next to it. It just blooms.", author: "Zen Shin" },
+                  { text: "The secret of change is to focus all your energy not on fighting the old, but on building the new.", author: "Socrates" },
+                  { text: "He who plants a garden, plants happiness.", author: "Chinese Proverb" },
+                  { text: "Vision without execution is hallucination.", author: "Thomas Edison" },
+                  { text: "All growth depends upon activity. There is no development physically or intellectually without effort.", author: "Calvin Coolidge" },
+                  { text: "Don't judge each day by the harvest you reap but by the seeds that you plant.", author: "Robert Louis Stevenson" },
+                  { text: "The measure of intelligence is the ability to change.", author: "Albert Einstein" },
+                  { text: "To plant a garden is to believe in tomorrow.", author: "Audrey Hepburn" },
+                  { text: "Good business leaders create a vision, articulate the vision, passionately own the vision, and relentlessly drive it to completion.", author: "Jack Welch" },
+                  { text: "Where flowers bloom, so does hope.", author: "Lady Bird Johnson" },
+                  { text: "It is not the strongest species that survive, nor the most intelligent, but the one most responsive to change.", author: "Charles Darwin" },
+                  { text: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
+                  { text: "From a small seed a mighty trunk may grow.", author: "Aeschylus" },
+                  { text: "Success is the sum of small efforts, repeated day in and day out.", author: "Robert Collier" },
+                  { text: "Bloom where you are planted.", author: "Bishop of Geneva" },
+                  { text: "What is not started today is never finished tomorrow.", author: "Johann Wolfgang von Goethe" },
+                  { text: "The earth laughs in flowers.", author: "Ralph Waldo Emerson" },
+                  { text: "Every accomplishment starts with the decision to try.", author: "John F. Kennedy" },
+                  { text: "Like wildflowers, you must allow yourself to grow in all the places people thought you never would.", author: "E.V." },
+                ];
+                const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+                const quote = quotes[dayOfYear % quotes.length];
+                return (
+                  <div style={{
+                    marginTop: '24px',
+                    paddingTop: '20px',
+                    borderTop: '1px solid rgba(138, 155, 142, 0.2)',
+                    textAlign: 'center'
+                  }}>
+                    <p style={{
+                      fontFamily: "'Instrument Serif'",
+                      fontSize: '16px',
+                      fontStyle: 'italic',
+                      color: 'var(--charcoal)',
+                      lineHeight: 1.6,
+                      margin: '0 auto 6px',
+                      maxWidth: '600px',
+                      opacity: 0.85
+                    }}>
+                      "{quote.text}"
+                    </p>
+                    <span style={{
+                      fontSize: '12px',
+                      color: 'var(--text-muted)',
+                      fontWeight: 500
+                    }}>
+                      — {quote.author}
+                    </span>
+                  </div>
+                );
+              })()}
             </div>
 
             <div style={{
@@ -1937,7 +2006,6 @@ function App() {
               ))}
             </div>
 
-            <StatusProgression />
           </div>
         </div>
       </div>
@@ -2200,7 +2268,6 @@ function App() {
             })}
           </div>
 
-          <StatusProgression />
         </div>
       </div>
     );
