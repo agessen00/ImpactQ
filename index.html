@@ -1821,42 +1821,97 @@ function App() {
   // RENDER GARDEN VIEW
   // ============================================================
   function renderGardenView() {
+    const growthStages = [
+      { status: STATUS.SEED, label: 'Seed', desc: 'Not Started' },
+      { status: STATUS.SPROUTING, label: 'Sprouting', desc: 'Early Progress' },
+      { status: STATUS.BUDDING, label: 'Budding', desc: 'In Progress' },
+      { status: STATUS.BLOOMED, label: 'Bloomed', desc: 'Complete' },
+    ];
+
     return (
       <div style={{ position: 'relative', zIndex: 1 }}>
         <div style={{ paddingBottom: isMobile ? 'var(--mobile-nav)' : '40px' }}>
           <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
+            {/* Unified Garden Header with Growth Stages */}
             <div style={{
-              marginBottom: '32px',
-              textAlign: 'center',
+              padding: '36px 32px 28px',
+              backgroundColor: 'var(--pale-green)',
+              borderRadius: 'var(--radius-lg)',
+              border: '1px solid rgba(138, 155, 142, 0.2)',
+              marginBottom: '28px',
               animation: 'fadeIn 0.6s ease-out'
             }}>
-              <h1 style={{
-                fontFamily: "'Instrument Serif'",
-                fontSize: '36px',
-                marginBottom: '8px',
-                color: 'var(--charcoal)'
-              }}>
-                Strategic Garden
-              </h1>
-              <p style={{
-                fontSize: '15px',
-                color: 'var(--text-muted)',
-                maxWidth: '600px',
-                margin: '0 auto'
-              }}>
-                Watch your strategic initiatives grow from seed to bloom. Each objective card shows the health and status of your tactical plans.
-              </p>
-            </div>
+              <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+                <h1 style={{
+                  fontFamily: "'Instrument Serif'",
+                  fontSize: '36px',
+                  marginBottom: '8px',
+                  color: 'var(--charcoal)'
+                }}>
+                  Strategic Garden
+                </h1>
+                <p style={{
+                  fontSize: '15px',
+                  color: 'var(--text-muted)',
+                  maxWidth: '600px',
+                  margin: '0 auto'
+                }}>
+                  Watch your strategic initiatives grow from seed to bloom. Each objective card shows the health and status of your tactical plans.
+                </p>
+              </div>
 
-            <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
-              <button onClick={() => setShowAddObjective(true)} style={{
-                padding: '10px 16px', fontSize: '13px', border: 'none',
-                background: 'var(--teal)', color: 'white', borderRadius: 'var(--radius-md)',
-                cursor: 'pointer', fontWeight: 500, transition: 'all var(--transition)'
-              }}>+ Add Objective</button>
-            </div>
+              {/* Growth Stages Row */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'flex-start',
+                gap: isMobile ? '12px' : '40px',
+                flexWrap: 'wrap',
+                marginBottom: '24px'
+              }}>
+                {growthStages.map((s, i) => (
+                  <div key={s.status} style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    animation: `slideIn 0.4s ease-out ${i * 0.08}s both`
+                  }}>
+                    <div style={{ marginBottom: '8px' }}>
+                      <StatusIcon status={s.status} size={48} />
+                    </div>
+                    <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--charcoal)' }}>
+                      {s.label}
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                      {s.desc}
+                    </div>
+                    {i < growthStages.length - 1 && !isMobile && (
+                      <span style={{ position: 'absolute', right: '-24px', top: '20px', color: 'var(--text-muted)', fontSize: '14px' }}>→</span>
+                    )}
+                  </div>
+                ))}
+              </div>
 
-            <StrategicGrowthStages />
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                <button onClick={() => setShowAddObjective(true)} style={{
+                  padding: '10px 20px', fontSize: '13px', border: 'none',
+                  background: 'var(--teal)', color: 'white', borderRadius: 'var(--radius-md)',
+                  cursor: 'pointer', fontWeight: 500, transition: 'all var(--transition)'
+                }}>+ Add Objective</button>
+                <button onClick={() => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = '.json';
+                  input.click();
+                }} style={{
+                  padding: '10px 20px', fontSize: '13px',
+                  border: '1px solid var(--border)',
+                  background: 'var(--card)', color: 'var(--text-secondary)', borderRadius: 'var(--radius-md)',
+                  cursor: 'pointer', fontWeight: 500, transition: 'all var(--transition)'
+                }}>+ Create a New Plan</button>
+              </div>
+            </div>
 
             <div style={{
               display: 'grid',
@@ -2513,7 +2568,7 @@ function App() {
           ImpactQ {APP_VERSION}
         </h1>
         <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-          {['present', 'garden', 'timeline'].map(v => (
+          {['garden', 'timeline'].map(v => (
             <button
               key={v}
               onClick={() => {
@@ -2533,7 +2588,7 @@ function App() {
                 fontWeight: 500,
                 transition: 'all var(--transition)'
               }}>
-              {v === 'present' ? 'Overview' : v.charAt(0).toUpperCase() + v.slice(1)}
+              {v.charAt(0).toUpperCase() + v.slice(1)}
             </button>
           ))}
 
@@ -2658,8 +2713,33 @@ function App() {
           className="action-button"
           onClick={() => setCurrentView('present')}
           title="View presentation"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '8px 16px',
+            borderRadius: 'var(--radius-md)',
+            border: '1px solid var(--gold)',
+            backgroundColor: 'rgba(212, 165, 116, 0.08)',
+            color: 'var(--charcoal)',
+            cursor: 'pointer',
+            fontSize: '13px',
+            fontWeight: 500,
+            transition: 'all var(--transition)'
+          }}
         >
-          📊 Present
+          <svg width="16" height="16" viewBox="0 0 48 48" fill="none" style={{ flexShrink: 0 }}>
+            {[0,1,2,3,4].map(i => {
+              const angle = (i / 5) * 360 - 90;
+              const rad = angle * Math.PI / 180;
+              const cx = 24 + Math.cos(rad) * 11;
+              const cy = 24 + Math.sin(rad) * 11;
+              return <ellipse key={i} cx={cx} cy={cy} rx="6.5" ry="10" fill="#D4A574" opacity={0.8 + i * 0.04} transform={`rotate(${angle + 90} ${cx} ${cy})`} />;
+            })}
+            <circle cx="24" cy="24" r="6" fill="#D4A574" opacity="0.95" />
+            <circle cx="24" cy="24" r="3" fill="#FFF" opacity="0.5" />
+          </svg>
+          Present
         </button>
       </nav>
     );
@@ -2686,7 +2766,7 @@ function App() {
         paddingBottom: 'max(8px, env(safe-area-inset-bottom))'
       }}>
         {[
-          { id: 'present', label: 'Overview', icon: '📊' },
+          { id: 'present', label: 'Present', icon: '✿' },
           { id: 'garden', label: 'Garden', icon: '🌿' },
           { id: 'timeline', label: 'Timeline', icon: '📅' },
           { id: 'bloom', label: 'Bloom', icon: '🌸' }
