@@ -2395,7 +2395,16 @@ function App() {
         flexDirection: 'column',
         minHeight: 'calc(100vh - var(--nav-height))',
         background: 'var(--surface)'
-      }}>
+      }}
+      tabIndex={0}
+      role="region"
+      aria-label="Growth Timeline"
+      onKeyDown={(e) => {
+        if (e.key === 'ArrowLeft') { e.preventDefault(); prevMonth(); }
+        else if (e.key === 'ArrowRight') { e.preventDefault(); nextMonth(); }
+        else if (e.key === 't' || e.key === 'T') { goToday(); }
+      }}
+      >
         {/* HEADER */}
         <div style={{
           padding: '20px 28px',
