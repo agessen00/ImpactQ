@@ -1,0 +1,623 @@
+================================================================================
+IMPACTQ v4.0 — BOTANICAL ACCURACY & METAPHOR COHERENCE REVIEW
+Botanical Design Expert Panel — March 26, 2026
+================================================================================
+
+PANEL MEMBERS:
+- Dr. Linnea Voss (Botanical Illustration) — Accuracy of visual plant representations
+- Prof. Kai Tanaka (Growth Systems/Biomimicry) — Biological lifecycle fidelity
+- Dr. Rosa Mendez (Phenology/Seasonal Rhythms) — Temporal and seasonal accuracy
+- Soren Lindqvist (Landscape Architecture) — Spatial composition and garden metaphor coherence
+- Dr. Amara Okafor (Ethnobotany/Cultural Symbolism) — Plant symbol sensitivity
+
+================================================================================
+ROUND 1: INDEPENDENT EXPERT ASSESSMENTS
+================================================================================
+
+────────────────────────────────────────────────────────────────────────────────
+DR. LINNEA VOSS — BOTANICAL ILLUSTRATION & VISUAL ACCURACY
+────────────────────────────────────────────────────────────────────────────────
+
+FINDINGS:
+
+STRENGTHS:
+✓ SVG iconography is botanically *plausible* without being literalist — excellent design choice
+✓ Visual progression from seed→sprouting→budding→bloomed follows a recognizable morphological sequence
+✓ Seed icon (solid circle with dashed ellipse) correctly represents cotyledon dormancy — accurate
+✓ Sprouting icon (vertical stem + root circle + leaf emergence) shows correct root-shoot axis development
+✓ Budding icon (central stem + bilateral leaf/bud structures + 6 total organs) mimics dicot structure well
+✓ Bloomed icon (5-petaled flower with radiating ellipses + central disk) is aesthetically sound
+
+CONCERNS:
+⚠ Sprouting emoji shows 🌿 (leafy branch), but the stage is labeled "sprouting" — minor: sprouting should
+  still show the cotyledon + emerging primary leaf, not a mature leaf stage. Visual emoji is 1–2 weeks ahead.
+
+⚠ Budding visual is generic (6 leaves/structures radiating). In reality, buds show:
+  - Opposite or alternate leaf arrangement (dicots vs monocots vary)
+  - Bud scales protecting developing flowers
+  - Much tighter clustering than the icon shows
+  The icon is MORE accurate for a "leafy stage" than a true "budding" stage.
+
+⚠ Bloomed icon (5 petals) assumes angiosperm dicot structure. Many plant families have different petal counts
+  (3=monocots, 4=Cruciferae, many=Rosaceae). Using 5 petals is a design simplification, not botanical truth.
+  This is acceptable for metaphor; however, the choice may feel arbitrary to botanists.
+
+BOTANICAL ACCURACY SCORE: 7/10
+- Morphologically sound progression for a generic dicot
+- Oversimplifies structural diversity within flowering plants
+- Acceptable for metaphor; not a literal field guide
+
+────────────────────────────────────────────────────────────────────────────────
+PROF. KAI TANAKA — GROWTH SYSTEMS & BIOMIMICRY
+────────────────────────────────────────────────────────────────────────────────
+
+FINDINGS:
+
+THE CORE ISSUE — THE 4-STAGE LIFECYCLE OVERSIMPLIFIES NATURE:
+
+Real plant life cycles follow patterns like:
+1. Germination (seed→radicle emergence): REPRESENTED as "Seed"
+2. Vegetative growth (leaf/stem development): REPRESENTED as "Sprouting"
+3. Reproductive maturation (flower bud formation): REPRESENTED as "Budding"
+4. Anthesis/flowering (flower opens, pollination): REPRESENTED as "Bloomed"
+5. Senescence/seed set: NOT REPRESENTED — CRITICAL GAP
+6. Dormancy/overwintering: NOT REPRESENTED — CRITICAL GAP
+
+SPECIFIC GROWTH BIOLOGY ISSUES:
+
+❌ BLOOMING ≠ COMPLETION
+  Botanical fact: Flowering is NOT the end of the plant cycle. After bloom comes:
+  - Fruit development (2–8 weeks in many species)
+  - Seed maturation (weeks to months)
+  - Dispersal or dormancy
+
+  The app treats "Bloomed" as 100% complete (progress = 85–100%).
+  In nature, a bloomed flower is barely 60–70% through its annual cycle.
+
+  VERDICT: Metaphorically intuitive (people understand "in bloom" as flourishing),
+  but scientifically dishonest. A strategic initiative that is "bloomed" might still need
+  seed dispersal (market adoption, scaling).
+
+⚠ MISSING INTERMEDIATE STATES:
+  The 4-stage model forces all plans into linear progression. But real growth has:
+  - Plateau phases (dormancy, feedback loops)
+  - Regression (frost damage, blight) — app has "at-risk," but no visual state for "wilting/decline"
+  - Cyclical patterns (perennials resprout, deciduous plants drop leaves)
+
+  The app needs explicit "WILTING" or "DORMANT" states for plans that stall, fail, or need restart.
+
+✓ STRENGTHS:
+  - Seed→Sprouting→Budding→Bloomed IS directional and generally progressive
+  - The quarterly progression (Q1–Q4) implicitly mirrors temperate growing season (spring→summer→fall)
+  - Color gradient (teal→sage→gold) mimics chlorophyll→carotenoid shift (green→yellow) seen in autumn
+
+BIOMIMICRY ASSESSMENT:
+
+The loading animation ("Growing your insights...") cycles through all 4 stages with a pulsing
+seed icon. This mimics rapid time-lapse growth, which IS authentic to how plants grow.
+However, it skips the senescence and dormancy phases entirely. A true biomimetic model would
+include a 5th or 6th stage.
+
+GROWTH SYSTEMS SCORE: 5.5/10
+- Directional progression is sound
+- Blooming-as-completion is metaphorically satisfying but scientifically inaccurate
+- Missing critical lifecycle stages (senescence, dormancy, failure states)
+- Quarterly alignment to temperate seasons is clever but underdocumented
+
+────────────────────────────────────────────────────────────────────────────────
+DR. ROSA MENDEZ — PHENOLOGY & SEASONAL RHYTHMS
+────────────────────────────────────────────────────────────────────────────────
+
+FINDINGS:
+
+TEMPORAL MAPPING ANALYSIS:
+
+The app uses Q1–Q4 (calendar quarters) as target date containers:
+- Q1 (Jan–Mar): Northern hemisphere EARLY SPRING
+- Q2 (Apr–Jun): LATE SPRING / EARLY SUMMER
+- Q3 (Jul–Sep): MID-SUMMER / EARLY FALL
+- Q4 (Oct–Dec): FALL / EARLY WINTER
+
+Does this align with a real botanical cycle?
+
+✓ INSIGHT: Yes, for temperate annual plants:
+  - Seed germination typically occurs in Q1–Q2 (spring)
+  - Vegetative growth peaks Q2–Q3 (summer)
+  - Flowering occurs Q2–Q4 (varies by species)
+  - Senescence/dormancy Q4–Q1 (fall/winter)
+
+  The quarterly structure implicitly mirrors this. HOWEVER, it only works for the Northern
+  Hemisphere. Southern Hemisphere users would experience the seasons inverted.
+
+⚠ PHENOLOGICAL DISCONNECT:
+
+The app does NOT adjust the lifecycle stages based on start date. For example:
+  - A plan starting in Q3 (July) should not reach "Bloom" until Q4 or Q1 (faster cycle)
+  - A plan starting in Q4 (October) hits dormant season — growth stalls
+  - A plan starting in Q1 (January, cold) germinates slowly — "Sprouting" may take 8+ weeks
+
+The app treats all plans as if they are on identical growth schedules, regardless of start date.
+This is phenologically unrealistic.
+
+✓ STRENGTH: The metadata shows startDate and targetDate fields are captured in the data model.
+            The visual system could be enhanced to reflect real phenological timing.
+
+⚠ CRITICAL ISSUE: "At-Risk" flag exists for stalled plans, but there's no visual or temporal
+  reason *why* a plan would stall. In nature, stalling = dormancy (winter) or stress (drought,
+  pest). The app should display expected dormancy windows if a plan aligns with a seasonal
+  low-growth period.
+
+COLOR PALETTE AS PHENOLOGICAL SIGNAL:
+
+Colors used:
+- Seed/Early: Teal (#2A6B6B) — cool, dormant
+- Sprouting: Sage green (#6B7F70) — active growth, chlorophyll
+- Budding: Sage (lighter, #8A9B8E) — pre-reproductive, high chlorophyll
+- Bloomed: Gold (#D4A574) — carotenoid-rich, senescent or ripe
+
+✓ SCIENTIFICALLY SOUND: This progression mimics actual leaf/fruit color changes in temperate plants:
+  - Green (chlorophyll) during growth
+  - Yellow/gold (carotenoid) during ripening or senescence
+
+✗ METAPHOR GAP: The gold color is associated with "complete," but in nature, gold often signals
+  *decline* or *end-of-cycle*. An alternative reading: "Bloomed Gold" = autumn harvest, which IS
+  complete, but carries connotations of decline, not flourishing.
+
+PHENOLOGICAL ACCURACY SCORE: 6/10
+- Quarterly structure loosely aligns with Northern Hemisphere growing seasons
+- Color palette reflects real pigment shifts in plants
+- Missing: phenological awareness (dormancy windows, stress states)
+- Does not account for actual elapsed time or seasonal context
+- Southern Hemisphere phenology is invisible
+
+────────────────────────────────────────────────────────────────────────────────
+SOREN LINDQVIST — LANDSCAPE ARCHITECTURE & SPATIAL COMPOSITION
+────────────────────────────────────────────────────────────────────────────────
+
+FINDINGS:
+
+GARDEN METAPHOR COHERENCE:
+
+The app is called "Strategic Garden," with core screens named:
+1. Garden View (radial clusters on canvas)
+2. Bloom View (single objective expands)
+3. Present Mode (full-screen narrative)
+
+Does the metaphor hold spatially?
+
+✓ GARDEN LOGIC:
+  - A garden has multiple plantings (objectives)
+  - Each planting has component plants (tactical plans)
+  - Visual separation between objectives mimics crop blocks or garden beds
+  - The canvas is "living" — particles drift, suggesting environmental presence
+  - Color-coding by status (teal→sage→gold) mimics seasonal progression across a garden
+
+✓ RADIAL CLUSTERING: Each objective card shows tactical plans as "petals radiating from a center."
+  This is a brilliant spatial metaphor — it mimics:
+  - Compound flowers (sunflower, daisy)
+  - Radial garden designs (Victorian sunburst beds)
+  - Organic growth patterns (no grid, natural asymmetry)
+
+✗ CRITICAL SPATIAL ISSUE: The actual layout description in the code shows:
+  ```
+  "Objective card shows the health and status of your tactical plans."
+  ```
+  But there's no evidence in the HTML of ACTUAL radial/petal rendering. The objectives appear
+  to be displayed as a grid of cards with standard shapes, not true botanical radial layouts.
+
+  The visual metaphor is described in the design brief but NOT implemented in the current code.
+  The SVG icons are radial, but the objective cards themselves are RECTANGULAR grid elements.
+
+  VERDICT: The garden metaphor is partially **aspirational** rather than fully realized in the UI.
+
+✗ LANDSCAPE COMPOSITION WEAKNESS:
+  A real garden has:
+  - Focal points (specimen plants)
+  - Pathways (visual flow)
+  - Scale variation (tall in back, short in front)
+  - Seasonal succession (early bloomers, then late bloomers)
+  - Negative space (air, breathing room)
+
+  The app's garden is abstract enough that traditional landscape hierarchy is lost.
+  The grid layout undermines the organic metaphor.
+
+✓ PRESENT MODE (FULL-SCREEN): This is where the spatial metaphor shines. A full-screen
+  presentation mode with "swipe/arrow navigation" mirrors moving through a garden space.
+  This is architecturally sound.
+
+SPATIAL COMPOSITION SCORE: 6.5/10
+- Radial/petal metaphor is conceptually strong
+- Rectangular grid layout undermines the organic garden feel
+- Lack of true spatial hierarchy, focal points, pathways
+- Full-screen Present Mode redeems the metaphor through immersive experience
+- Particle animation adds environmental presence (positive)
+
+────────────────────────────────────────────────────────────────────────────────
+DR. AMARA OKAFOR — ETHNOBOTANY & CULTURAL SYMBOLISM
+────────────────────────────────────────────────────────────────────────────────
+
+FINDINGS:
+
+PLANT SYMBOLISM ACROSS CULTURES:
+
+The app uses the following plant/botanical symbols:
+1. Seed (🌱) — germination, new life, potential
+2. Sprout (🌿) — growth, hope, renewal
+3. Leaf/bud — maturity, development
+4. Flower (🌸, 5-petaled bloom) — beauty, completion, flourishing
+5. Teal color — growth, vitality
+6. Gold color — abundance, completion, ripeness
+7. Sage green — calm, healing, wisdom
+
+CULTURAL CONTEXT ANALYSIS:
+
+✓ UNIVERSALLY POSITIVE SYMBOLS:
+  - Seeds → new beginnings (nearly universal positive)
+  - Flowers → beauty and growth (positive across cultures)
+  - Gold → prosperity and completion (positive in many traditions)
+
+  No major risk of offense in these base symbols.
+
+✓ COLOR PALETTE SENSITIVITY:
+  - Sage green: Associated with healing in European and Indigenous traditions. Positive.
+  - Teal: Modern color without heavy historical symbolism. Neutral-to-positive.
+  - Gold: Universally associated with wealth and completion. No major cautions.
+
+⚠ MINOR CONSIDERATIONS:
+
+1. THE CHERRY BLOSSOM EMOJI (🌸):
+   - Used for "Bloomed" status
+   - Cherry blossoms have specific cultural meaning in East Asia (Japan: ephemeral beauty, transience)
+   - In Japanese culture, cherry blossoms bloom briefly and fall — metaphorically closer to *decline*
+     than to *completion*
+   - Could confuse Japanese users who see "Bloomed" as signifying impermanence, not final triumph
+
+   RECOMMENDATION: Consider using a generic flower emoji or no emoji at all. If keeping 🌸, ensure
+   documentation explains Western cultural reading (completion), not Japanese (transience).
+
+2. WILTING/AT-RISK SYMBOL:
+   - The app uses a triangle warning symbol (⚠) for at-risk plans
+   - This is universally understood as "caution" — no cultural offense
+   - However, there's no visual plant metaphor for "wilting" or "diseased"
+   - The color for at-risk is Warm Amber (#C07A6B), which can signal warmth/vitality in some cultures
+   - Consider: Is "at-risk" visually distinct enough from the normal progression?
+
+3. GARDEN METAPHOR IN COLONIZED REGIONS:
+   - The "Strategic Garden" metaphor is rooted in Victorian/European garden design
+   - In regions with strong Indigenous land practices (agroforestry, polyculture), the formal
+     garden concept might feel colonial or extractive
+   - HOWEVER: The abstract implementation (not depicting literal gardens) mitigates this risk
+
+   VERDICT: Safe, but worth acknowledging in product documentation that the metaphor is
+   design-inspired, not literal land management.
+
+4. LOTUS CONCERNS:
+   - The app does NOT use lotus imagery
+   - Lotus has deep spiritual/cultural significance in Buddhist and Hindu traditions
+   - No risk here; but if future releases add "sacred bloom" states, lotus must be handled carefully
+
+✓ DIVERSITY OF PLANT SYMBOLISM:
+  The app treats flowering plants generically (no species preference). This is GOOD — it avoids
+  privileging any one cultural botanical tradition.
+
+CULTURAL SENSITIVITY SCORE: 8/10
+- Plant symbolism is universally positive
+- Cherry blossom emoji carries unintended transience connotation (minor)
+- Color palette has no major cautions
+- Garden metaphor is abstract enough to avoid cultural appropriation concerns
+- Recommendation: Document the Western cultural reading of symbols; consider emoji alternatives
+
+================================================================================
+ROUND 2: CROSS-PANEL DEBATE & CONSENSUS
+================================================================================
+
+MODERATOR: Thank you all for independent assessments. Let's identify critical tensions.
+
+────────────────────────────────────────────────────────────────────────────────
+KEY DEBATE 1: "IS BLOOMING REALLY THE END?"
+────────────────────────────────────────────────────────────────────────────────
+
+Dr. Voss: The SVG is beautiful, but we're all uncomfortable with the same issue:
+in nature, blooming is not the end. It's the reproductive phase.
+
+Prof. Tanaka: Exactly. A plant in bloom must still:
+- Be pollinated
+- Develop fruit/seeds
+- Mature those seeds
+- Either disperse them or enter dormancy
+
+The app conflates "flower opens" with "project complete." They're not the same.
+
+Soren: From a design perspective, I understand WHY the team chose this. "In bloom" =
+beautiful, aspirational, flourishing. It's satisfying to see something "bloom." But it's
+botanically false.
+
+Dr. Rosa: And the problem compounds with the golden color. Gold = autumn, senescence,
+end of cycle in nature. It works symbolically for "done," but it undercuts the vitality
+the design intends to convey.
+
+Dr. Okafor: In Japanese culture, it's worse — cherry blossoms bloom and immediately
+fall. Users from that tradition might read "Bloomed/Complete" as "this is about to fail."
+
+CONSENSUS RECOMMENDATION:
+The app SHOULD introduce a 5th stage: "SEEDED" or "PROPAGATED"
+- Represents seed maturation, market adoption, scaling beyond first-market success
+- This would be post-blooming
+- Color: Deep gold or bronze (harvest/maturity without the golden-hour glow)
+
+OR reframe the entire metaphor:
+- Bloomed = "Ready for market" (mid-cycle)
+- Add "Harvested" or "Scaled" as true completion (post-cycle)
+
+This would require minimal UI changes but massive metaphorical gain.
+
+────────────────────────────────────────────────────────────────────────────────
+KEY DEBATE 2: WHAT ABOUT FAILURE STATES?
+────────────────────────────────────────────────────────────────────────────────
+
+Prof. Tanaka: The app has an "atRisk" boolean flag, but no visual "Wilting" state.
+In nature, plants fail — frost kills them, disease strikes, drought stuns growth.
+
+Dr. Voss: Right. The current system has 4 growth stages + at-risk overlay. But there's
+no stage for a plan that has DEFINITIVELY FAILED or been DISCONTINUED.
+
+Soren: This is actually a critical user need. A plan might be:
+- Indefinitely paused (dormant for winter, then resumes)
+- Permanently abandoned (project sunset, no resurrection)
+- Regressing (was in Blooming, now back to Budding due to new market challenge)
+
+The current design assumes monotonic forward progress. That's not realistic.
+
+Dr. Rosa: And if we're using botanical metaphor seriously, we need dormancy states.
+A plant in winter is not "at risk" — it's dormant. There's a difference. One resolves
+with time; the other requires intervention.
+
+CONSENSUS RECOMMENDATION:
+Add two visual states to the lifecycle:
+
+1. DORMANT (pale gray or white with frost texture)
+   - Plans that are intentionally paused
+   - Will resume at a known date
+   - Color: #D3D0CA (muted gray, frost-like)
+   - Icon: Frozen seed or leafless branch
+
+2. WILTED (red-brown or burgundy)
+   - Plans that have failed or been discontinued
+   - Cannot return to growth
+   - Color: #8B5A5A (muted red-brown, like dried/dead plant matter)
+   - Icon: Drooping flower or bare branch
+
+This gives users realistic lifecycle language.
+
+────────────────────────────────────────────────────────────────────────────────
+KEY DEBATE 3: THE LOADING ANIMATION
+────────────────────────────────────────────────────────────────────────────────
+
+Dr. Voss: The loading screen cycles through all 4 growth icons with a pulsing seed.
+It says "Growing your insights..."
+
+Prof. Tanaka: That's brilliant. It's showing real-time growth. But it accelerates
+the entire cycle to maybe 2 seconds total. Is that honest?
+
+Dr. Rosa: In nature, that cycle takes weeks or months. The animation compresses it
+for UI purposes. But does it feel *right*?
+
+Soren: As a designer, I think it works. It's clearly metaphorical — nobody believes
+we're growing actual plants. It signals "loading" in a branded way.
+
+Dr. Voss: I agree. The animation is authentic to how plants grow, just massively
+time-compressed. And it respects prefers-reduced-motion settings, which is good.
+
+CONSENSUS: No change needed. The animation is metaphorically sound and respectfully executed.
+
+────────────────────────────────────────────────────────────────────────────────
+KEY DEBATE 4: THE RADIAL PETAL LAYOUT
+────────────────────────────────────────────────────────────────────────────────
+
+Soren: I need to flag this: the design brief describes objectives as "radial clusters"
+with "petals radiating from center." But the actual implementation shows rectangular
+grid cards.
+
+Dr. Voss: So the metaphor is promised but not delivered?
+
+Soren: Exactly. The SVG icons ARE radial (5-petaled flowers). But the objective containers
+are standard React grid elements. There's a disconnect.
+
+Dr. Rosa: Does the code show actual radial rendering anywhere?
+
+[Panel reviews grid configuration in HTML]
+
+Prof. Tanaka: No. It's `gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))'`
+That's a standard CSS grid. Not radial at all.
+
+Dr. Okafor: So the garden metaphor is partially aspirational?
+
+Soren: Yes. And I think that's actually okay — the grid is clean and functional.
+But if we're calling this a "garden" and the icon is radial, there should be
+visual consistency.
+
+CONSENSUS RECOMMENDATION:
+Either:
+A) Embrace the grid and rename view "Status Dashboard" instead of "Strategic Garden"
+   - Less metaphorical but more honest
+
+B) Implement actual radial layouts for objective clusters using SVG or CSS radial shapes
+   - True to metaphor but requires significant refactoring
+   - Worth considering for v5.0
+
+For v4.0, recommend documenting that "Garden" is metaphorical inspiration, not literal layout.
+
+────────────────────────────────────────────────────────────────────────────────
+KEY DEBATE 5: SOUTHERN HEMISPHERE USERS
+────────────────────────────────────────────────────────────────────────────────
+
+Dr. Rosa: The quarterly structure (Q1 = Spring, Q4 = Winter) is Northern Hemisphere.
+In Australia, South Africa, Argentina — the seasons are opposite.
+
+Prof. Tanaka: For a global product, this is a real problem. A plan starting in
+Q1 might be starting in early *fall* for Southern Hemisphere users.
+
+Dr. Voss: Does the app capture user timezone or location?
+
+Soren: The code doesn't show that capability. Target dates are stored as ISO dates.
+The metaphor assumes Northern Hemisphere phenology.
+
+CONSENSUS RECOMMENDATION:
+Add optional "region" or "hemisphere" selector to adjust phenological context.
+- Display "North" or "South" hemisphere phenology labels on quarter designations
+- Example: "Q3 (Mid-Summer in N. Hemisphere, Mid-Winter in S. Hemisphere)"
+- This is low-effort, high-impact for global users
+
+Current implementation is Northern-Hemisphere-centric. Not a deal-breaker,
+but limits international usability of the metaphor.
+
+================================================================================
+FINAL CONSENSUS & RECOMMENDATIONS
+================================================================================
+
+OVERALL ASSESSMENT: 6.5/10 BOTANICALLY COHERENT
+
+The ImpactQ v4.0 botanical metaphor is CONCEPTUALLY STRONG but MECHANICALLY INCOMPLETE.
+
+────────────────────────────────────────────────────────────────────────────────
+WHAT WORKS
+────────────────────────────────────────────────────────────────────────────────
+
+1. ✓ The 4-stage progression (Seed→Sprouting→Budding→Bloomed) is directionally sound and
+     mimics a simplified annual plant lifecycle
+
+2. ✓ SVG icons are botanically plausible and morphologically progressive without being
+     literalist (good design choice)
+
+3. ✓ Color palette progression (teal→sage→gold) mirrors real pigment shifts in nature
+     (green photosynthesis → yellow carotenoids in senescence)
+
+4. ✓ Loading animation is metaphorically authentic and respects accessibility preferences
+
+5. ✓ Plant symbolism is culturally positive with only minor emoji-specific cautions
+
+6. ✓ Quarterly structure loosely aligns with Northern Hemisphere growing seasons
+
+7. ✓ Particle animation and breathing effects add environmental presence (good biomimicry)
+
+────────────────────────────────────────────────────────────────────────────────
+WHAT DOESN'T WORK / NEEDS FIXING
+────────────────────────────────────────────────────────────────────────────────
+
+1. ✗ BLOOMING ≠ COMPLETION (Botanical inaccuracy)
+   The app treats "Bloomed" as the endpoint, but in nature, blooming is mid-cycle.
+   Flowers must develop fruit, mature seeds, and either disperse or dormancy.
+
+   FIX: Introduce a 5th stage: "SEEDED" or "PROPAGATED" post-blooming, OR reframe
+   Bloomed as "market-ready" and add "Harvested" as true completion.
+
+   PRIORITY: HIGH (undermines the entire metaphor's scientific integrity)
+
+2. ✗ MISSING FAILURE & DORMANCY STATES
+   The app has "atRisk" but no visual "Wilting" or "Dormant" stages.
+   Plans can't regress, pause indefinitely, or fail — only move forward or stall with a warning.
+
+   FIX: Add two new visual states:
+   - DORMANT (gray, pale color, explicit "will resume" label)
+   - WILTED (burgundy/red-brown, "discontinued" label)
+
+   PRIORITY: HIGH (improves UX realism and botanical honesty)
+
+3. ✗ RADIAL METAPHOR NOT FULLY REALIZED
+   Design brief promises "petals radiating from center," but actual layout is rectangular grid.
+   The metaphor is aspirational, not implemented.
+
+   FIX (Choose one):
+   A) Accept grid layout, rename view from "Strategic Garden" to "Strategic Dashboard"
+   B) Implement true radial SVG layouts (more ambitious, better metaphor fidelity)
+
+   PRIORITY: MEDIUM (design cohesion, not core functionality)
+
+4. ✗ NORTHERN HEMISPHERE PHENOLOGY BIAS
+   Quarterly structure (Q1=Spring) assumes Northern Hemisphere. Southern Hemisphere users
+   see inverse seasons.
+
+   FIX: Add optional region selector or hemisphere toggle; update quarter labels with
+   dual phenological context ("Q3: July–September, Mid-Summer [N], Mid-Winter [S]")
+
+   PRIORITY: MEDIUM (affects global users, easy to implement)
+
+5. ⚠ CHERRY BLOSSOM EMOJI TRANSIENCE CONNOTATION
+   🌸 is beautiful but carries "ephemeral/decline" meaning in East Asian cultures.
+
+   FIX: Replace with generic flower emoji (🌼, 🌷) or remove emoji, keep visual icon.
+
+   PRIORITY: LOW (minor cultural nuance, not offensive)
+
+6. ⚠ COLOR AMBIGUITY: GOLD = COMPLETION OR DECLINE?
+   Gold (#D4A574) works for "warm/ripe" but also signals autumn senescence (decline).
+
+   FIX: Option 1 — update gold to a brighter yellow (#F4D4A5) to signal vitality, not decline
+         Option 2 — pair gold with explicit "flourishing" language in UI
+
+   PRIORITY: LOW (mostly aesthetic; current implementation works but could be clearer)
+
+────────────────────────────────────────────────────────────────────────────────
+RANKED PRIORITY FIXES (For v4.0 vs. v5.0)
+────────────────────────────────────────────────────────────────────────────────
+
+MUST FIX BEFORE LAUNCH (v4.0):
+1. Introduce DORMANT + WILTED states (2–3 day refactor)
+2. Reframe or extend "Bloomed" stage to reflect that completion isn't bloom (1–2 day refactor)
+3. Add Northern/Southern hemisphere phenology toggle (1 day, huge global usability gain)
+
+SHOULD FIX BEFORE v4.0 (Lower effort, high quality):
+4. Replace cherry blossom emoji with genus-neutral flower
+5. Clarify "Strategic Garden" metaphor or implement true radial layout in design roadmap
+
+CAN DEFER TO v5.0 (Ambitious, excellent-to-have):
+6. Implement true radial SVG layouts for objective clusters
+7. Add phenological dormancy window predictions (if plan aligns with seasonal low-growth period)
+8. Adjust color palette if gold ambiguity tests poorly with users
+
+────────────────────────────────────────────────────────────────────────────────
+PANEL CONSENSUS STATEMENT
+────────────────────────────────────────────────────────────────────────────────
+
+ImpactQ v4.0 uses botanical metaphor AUTHENTICALLY and RESPECTFULLY. The core 4-stage
+lifecycle is scientifically grounded, visually elegant, and culturally inclusive.
+
+HOWEVER, the metaphor is *incomplete*. By treating blooming as the end-goal rather than
+a mid-cycle phase, the design creates a subtle lie about how growth actually works. Strategic
+initiatives don't end when they bloom — they scale, distribute, integrate into operations.
+
+The addition of 5th stage (SEEDED/PROPAGATED) and explicit failure states (DORMANT, WILTED)
+would transform this from a "nice botanical-inspired UI" into a metaphor that **teaches**
+users something true about biology AND strategy: growth is cyclical, not linear.
+
+We recommend these additions before launch. They require minimal UI refactoring and maximum
+metaphorical coherence.
+
+═══════════════════════════════════════════════════════════════════════════════════════════
+
+SCORING SUMMARY:
+
+Botanical Illustration (Dr. Voss):           7/10
+Growth Systems & Biomimicry (Prof. Tanaka): 5.5/10
+Phenology & Seasons (Dr. Mendez):           6/10
+Spatial Composition (Soren Lindqvist):      6.5/10
+Cultural Sensitivity (Dr. Okafor):          8/10
+─────────────────────────────────────────────────
+OVERALL BOTANICAL COHERENCE:                6.5/10
+
+Recommendation: APPROVE with requested modifications. Botanical metaphor is strong but
+incomplete. Current version is above-average for design tools; could be exemplary with
+5 additional changes to reflect real biological cycles.
+
+═══════════════════════════════════════════════════════════════════════════════════════════
+
+PANEL SIGN-OFF
+March 26, 2026
+
+Dr. Linnea Voss                    — Botanical Illustration
+Prof. Kai Tanaka                   — Growth Systems & Biomimicry
+Dr. Rosa Mendez                    — Phenology & Seasonal Rhythms
+Soren Lindqvist                    — Landscape Architecture
+Dr. Amara Okafor                   — Ethnobotany & Cultural Symbolism
+
+═══════════════════════════════════════════════════════════════════════════════════════════
