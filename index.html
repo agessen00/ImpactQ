@@ -65,6 +65,9 @@
     @keyframes breathe { 0%,100% { opacity:0.12; } 50% { opacity:0.3; } }
     @keyframes slideDown { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:translateY(0); } }
     @keyframes slideIn { from { opacity:0; transform:translateX(-10px); } to { opacity:1; transform:translateX(0); } }
+    @keyframes gentlePulse { 0%,100% { box-shadow: 0 1px 3px rgba(0,0,0,0.06); } 50% { box-shadow: 0 2px 8px rgba(0,0,0,0.1); } }
+    @keyframes bloomGlow { 0%,100% { filter: brightness(1); } 50% { filter: brightness(1.04); } }
+    @keyframes sproutGrow { 0%,100% { transform: scaleX(1); } 50% { transform: scaleX(1.005); } }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
     }
@@ -2276,34 +2279,30 @@ function App() {
   // RENDER TIMELINE VIEW (Gantt-style calendar)
   // ============================================================
   function renderTimelineView() {
-    // Get all plans grouped and sorted
     const allPlans = [];
     objectives.forEach(obj => {
       obj.plans.forEach(plan => {
-        allPlans.push({ ...plan, objectiveName: obj.name, objectiveId: obj.id });
+        allPlans.push({ ...plan, objectiveName: obj.name, objectiveId: obj.id, name: plan.title });
       });
     });
 
-    // Get calendar info
     const year = tlMonth.year;
     const month = tlMonth.month;
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
     const today = new Date();
     const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
     const todayDate = isCurrentMonth ? today.getDate() : -1;
+    const monthName = new Date(year, month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-    // Group plans by objective
     const plansByObjective = {};
     allPlans.forEach(plan => {
-      if (!plansByObjective[plan.objectiveName]) {
-        plansByObjective[plan.objectiveName] = [];
-      }
+      if (!plansByObjective[plan.objectiveName]) plansByObjective[plan.objectiveName] = [];
       plansByObjective[plan.objectiveName].push(plan);
     });
 
-    // Calculate day range for each plan
     const getPlanDayRange = (plan) => {
       const start = new Date(plan.startDate);
       const end = new Date(plan.targetDate);
@@ -2312,19 +2311,83 @@ function App() {
       return { startDay: Math.max(1, startDay), endDay: Math.min(daysInMonth, endDay) };
     };
 
-    // Prev/next month handlers
-    const prevMonth = () => {
-      setTlMonth(p => p.month === 0 ? { year: p.year - 1, month: 11 } : { year: p.year, month: p.month - 1 });
-    };
-    const nextMonth = () => {
-      setTlMonth(p => p.month === 11 ? { year: p.year + 1, month: 0 } : { year: p.year, month: p.month + 1 });
-    };
-    const goToday = () => {
-      const d = new Date();
-      setTlMonth({ year: d.getFullYear(), month: d.getMonth() });
+    const prevMonth = () => setTlMonth(p => p.month === 0 ? { year: p.year - 1, month: 11 } : { year: p.year, month: p.month - 1 });
+    const nextMonth = () => setTlMonth(p => p.month === 11 ? { year: p.year + 1, month: 0 } : { year: p.year, month: p.month + 1 });
+    const goToday = () => { const d = new Date(); setTlMonth({ year: d.getFullYear(), month: d.getMonth() }); };
+
+    // Organic status colors with botanical textures and animations
+    const getBarStyle = (plan) => {
+      const ring = (c, s) => `radial-gradient(circle at 20% 50%, transparent ${s}px, ${c} ${s}px, ${c} ${s+1.5}px, transparent ${s+1.5}px)`;
+      if (plan.status === STATUS.SEED) return { bg: 'linear-gradient(135deg, #E8E5DC 0%, #D8D4CB 100%)', border: '#C8C3BA', text: '#6B6560', fill: '#D0CBC4', anim: 'none', ringBg: ring('rgba(107,101,96,0.04)', 3) };
+      if (plan.status === STATUS.SPROUTING) return { bg: 'linear-gradient(135deg, #F5E6D0 0%, #E8C9A4 100%)', border: '#D4A574', text: '#7A5C1E', fill: '#E8C9A4', anim: 'sproutGrow 4s ease-in-out infinite', ringBg: ring('rgba(139,105,20,0.05)', 5) };
+      if (plan.status === STATUS.BUDDING) return { bg: 'linear-gradient(135deg, #D4DED6 0%, #A8B5AB 100%)', border: '#8A9B8E', text: '#3D5A45', fill: '#A8B5AB', anim: 'gentlePulse 3s ease-in-out infinite', ringBg: ring('rgba(138,155,142,0.05)', 7) };
+      if (plan.status === STATUS.BLOOMED) return { bg: 'linear-gradient(135deg, #B8C9BC 0%, #8A9B8E 100%)', border: '#6B7F70', text: '#2A4A33', fill: '#8A9B8E', anim: 'bloomGlow 2.5s ease-in-out infinite', ringBg: ring('rgba(42,107,107,0.05)', 9) };
+      return { bg: '#E8E5DC', border: '#D0CBC4', text: '#6B6560', fill: '#D0CBC4', anim: 'none', ringBg: 'none' };
     };
 
-    const monthName = new Date(year, month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    // Column width based on how many days
+    // MOBILE FALLBACK — card-based list view
+    if (isMobile) {
+      return (
+        <div style={{ padding: '16px', paddingBottom: 'var(--mobile-nav)', background: 'var(--surface)', minHeight: 'calc(100vh - var(--nav-height))' }}>
+          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+            <h2 style={{ fontFamily: "'Instrument Serif'", fontSize: '24px', color: 'var(--charcoal)', marginBottom: '4px' }}>Growth Timeline</h2>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '0 0 12px' }}>{monthName}</p>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+              <button onClick={prevMonth} style={{ padding: '8px 16px', border: '1px solid var(--border)', borderRadius: 'var(--radius-full, 20px)', background: 'var(--card)', cursor: 'pointer', fontSize: '12px' }}>‹ Prev</button>
+              <button onClick={goToday} style={{ padding: '8px 16px', border: 'none', borderRadius: 'var(--radius-full, 20px)', background: 'var(--teal)', color: 'white', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>Today</button>
+              <button onClick={nextMonth} style={{ padding: '8px 16px', border: '1px solid var(--border)', borderRadius: 'var(--radius-full, 20px)', background: 'var(--card)', cursor: 'pointer', fontSize: '12px' }}>Next ›</button>
+            </div>
+          </div>
+          {Object.entries(plansByObjective).map(([objName, plans]) => (
+            <div key={objName} style={{ marginBottom: '20px' }}>
+              <h3 style={{ fontFamily: "'Instrument Serif'", fontSize: '15px', color: 'var(--teal)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <StatusIcon status={plans[0]?.status || STATUS.SEED} size={16} />
+                {objName}
+              </h3>
+              {plans.map(plan => {
+                const style = getBarStyle(plan);
+                return (
+                  <button key={plan.id} onClick={() => setEditingPlan(plan)} style={{
+                    width: '100%', padding: '14px 16px', marginBottom: '8px',
+                    border: `1px solid ${style.border}`, borderRadius: '16px',
+                    background: style.bg, textAlign: 'left', cursor: 'pointer'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontWeight: 600, fontSize: '13px', color: style.text, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <StatusIcon status={plan.status} size={16} />
+                        {plan.title || plan.name}
+                      </span>
+                      <span style={{ fontSize: '11px', background: 'rgba(255,255,255,0.5)', padding: '2px 8px', borderRadius: '10px', fontWeight: 600, color: style.text }}>{plan.progress}%</span>
+                    </div>
+                    <div style={{ fontSize: '11px', color: style.text, opacity: 0.7, marginTop: '6px' }}>
+                      {new Date(plan.startDate).toLocaleDateString()} → {new Date(plan.targetDate).toLocaleDateString()}
+                      {plan.owner ? ` · ${plan.owner}` : ''}
+                    </div>
+                    {/* Mini progress bar */}
+                    <div style={{ marginTop: '8px', height: '4px', borderRadius: '2px', background: 'rgba(255,255,255,0.3)', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: plan.progress + '%', background: style.border, borderRadius: '2px', transition: 'width 0.3s' }} />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    const colW = Math.max(36, Math.min(52, 1200 / daysInMonth));
+    const sidebarW = 220;
+    const rowH = 44;
+    const headerH = 56;
+
+    // Build week separators
+    const weekLines = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dow = new Date(year, month, d).getDay();
+      if (dow === 1 && d > 1) weekLines.push(d);
+    }
 
     return (
       <div style={{
@@ -2333,270 +2396,322 @@ function App() {
         minHeight: 'calc(100vh - var(--nav-height))',
         background: 'var(--surface)'
       }}>
+        {/* HEADER */}
         <div style={{
-          padding: '16px 24px',
+          padding: '20px 28px',
+          background: 'var(--card)',
           borderBottom: '1px solid var(--border)',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           flexWrap: 'wrap',
-          gap: '12px'
+          gap: '16px'
         }}>
           <div>
             <h2 style={{
               fontFamily: "'Instrument Serif'",
-              fontSize: '24px',
+              fontSize: '26px',
               marginBottom: '4px',
-              color: 'var(--charcoal)'
-            }}>Timeline View</h2>
+              color: 'var(--charcoal)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px'
+            }}>
+              <svg width="22" height="22" viewBox="0 0 48 48" fill="none" style={{ opacity: 0.7 }}>
+                <path d="M24 4 C24 4 10 18 10 28 C10 36 16 42 24 42 C32 42 38 36 38 28 C38 18 24 4 24 4Z" fill="var(--sage)" opacity="0.3" />
+                <path d="M24 12 L24 36" stroke="var(--teal)" strokeWidth="1.5" strokeLinecap="round" />
+                <path d="M24 20 C20 17 16 18 15 21" stroke="var(--teal)" strokeWidth="1.2" strokeLinecap="round" fill="none" />
+                <path d="M24 26 C28 23 32 24 33 27" stroke="var(--teal)" strokeWidth="1.2" strokeLinecap="round" fill="none" />
+              </svg>
+              Growth Timeline
+            </h2>
             <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>
               {allPlans.length} plans across {Object.keys(plansByObjective).length} objectives
             </p>
           </div>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <button onClick={prevMonth} style={{
-              padding: '8px 12px',
-              border: '1px solid var(--border)',
-              background: 'var(--card)',
-              borderRadius: 'var(--radius-sm)',
-              cursor: 'pointer',
-              fontSize: '13px'
-            }}>← Prev</button>
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <button onClick={prevMonth} aria-label="Previous month" style={{
+              width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              border: '1px solid var(--border)', background: 'var(--surface)',
+              borderRadius: '50%', cursor: 'pointer', fontSize: '16px', color: 'var(--text-secondary)',
+              transition: 'all 0.2s'
+            }}>‹</button>
             <div style={{
-              minWidth: '160px',
-              textAlign: 'center',
-              fontSize: '14px',
-              fontWeight: 600,
-              color: 'var(--charcoal)'
+              minWidth: '180px', textAlign: 'center',
+              fontFamily: "'Instrument Serif'", fontSize: '18px', fontWeight: 400,
+              color: 'var(--charcoal)', letterSpacing: '0.02em'
             }}>{monthName}</div>
-            <button onClick={nextMonth} style={{
-              padding: '8px 12px',
-              border: '1px solid var(--border)',
-              background: 'var(--card)',
-              borderRadius: 'var(--radius-sm)',
-              cursor: 'pointer',
-              fontSize: '13px'
-            }}>Next →</button>
+            <button onClick={nextMonth} aria-label="Next month" style={{
+              width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              border: '1px solid var(--border)', background: 'var(--surface)',
+              borderRadius: '50%', cursor: 'pointer', fontSize: '16px', color: 'var(--text-secondary)',
+              transition: 'all 0.2s'
+            }}>›</button>
             <button onClick={goToday} style={{
-              padding: '8px 12px',
-              border: '1px solid var(--border)',
-              background: 'var(--teal-light)',
-              color: 'white',
-              borderRadius: 'var(--radius-sm)',
-              cursor: 'pointer',
-              fontSize: '13px',
-              fontWeight: 600
+              padding: '8px 16px', marginLeft: '8px',
+              border: 'none', background: 'var(--teal)', color: 'white',
+              borderRadius: 'var(--radius-full, 20px)', cursor: 'pointer',
+              fontSize: '12px', fontWeight: 600, letterSpacing: '0.04em',
+              transition: 'all 0.2s', textTransform: 'uppercase'
             }}>Today</button>
           </div>
         </div>
 
-        <div style={{
-          display: 'flex',
-          flex: 1,
-          overflow: 'hidden',
-          borderTop: '1px solid var(--border)'
-        }}>
+        {/* GANTT BODY */}
+        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
           {/* LEFT SIDEBAR */}
           <div style={{
-            width: '240px',
+            width: sidebarW + 'px', minWidth: sidebarW + 'px',
             borderRight: '1px solid var(--border)',
-            overflowY: 'auto',
-            background: 'var(--card)',
-            padding: '16px 12px'
+            overflowY: 'auto', background: 'var(--card)',
+            display: 'flex', flexDirection: 'column'
           }}>
-            {Object.entries(plansByObjective).map(([objName, plans]) => (
-              <div key={objName} style={{ marginBottom: '20px' }}>
-                <div style={{
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  color: 'var(--text-muted)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                  marginBottom: '10px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px'
-                }}>
-                  <span>{objName.substring(0, 20)}</span>
-                  <span style={{ fontSize: '10px' }}>| {plans.length}</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  {plans.map(plan => (
+            {/* Sidebar header aligned with day header */}
+            <div style={{
+              height: headerH + 'px', minHeight: headerH + 'px',
+              padding: '0 16px',
+              display: 'flex', alignItems: 'flex-end', paddingBottom: '10px',
+              borderBottom: '1px solid var(--border)',
+              background: 'var(--surface)'
+            }}>
+              <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                Objectives / Plans
+              </span>
+            </div>
+            {/* Sidebar plan rows */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '0' }}>
+              {Object.entries(plansByObjective).map(([objName, plans], gi) => (
+                <div key={objName}>
+                  {/* Objective group header */}
+                  <div style={{
+                    padding: '12px 16px 6px',
+                    fontSize: '11px', fontWeight: 700,
+                    color: 'var(--teal)', textTransform: 'uppercase',
+                    letterSpacing: '0.06em',
+                    borderBottom: '1px solid rgba(138,155,142,0.1)',
+                    background: gi % 2 === 0 ? 'rgba(138,155,142,0.04)' : 'transparent',
+                    display: 'flex', alignItems: 'center', gap: '6px'
+                  }}>
+                    <StatusIcon status={plans[0]?.status || STATUS.SEED} size={14} />
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{objName}</span>
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 400, marginLeft: 'auto' }}>{plans.length}</span>
+                  </div>
+                  {/* Individual plan rows */}
+                  {plans.map((plan, pi) => (
                     <div
                       key={plan.id}
                       onClick={() => setEditingPlan(plan)}
                       style={{
-                        padding: '7px 8px',
-                        borderRadius: '4px',
-                        background: 'var(--surface)',
-                        border: '1px solid var(--border)',
-                        cursor: 'pointer',
-                        fontSize: '11px',
-                        color: 'var(--charcoal)',
-                        transition: 'all 0.2s',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '5px'
+                        height: rowH + 'px',
+                        padding: '0 16px', display: 'flex', alignItems: 'center', gap: '8px',
+                        cursor: 'pointer', fontSize: '12px', color: 'var(--charcoal)',
+                        borderBottom: '1px solid rgba(138,155,142,0.08)',
+                        background: gi % 2 === 0 ? 'rgba(138,155,142,0.02)' : 'transparent',
+                        transition: 'background 0.15s'
                       }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'var(--pale-bg)';
-                        e.currentTarget.style.borderColor = 'var(--teal)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'var(--surface)';
-                        e.currentTarget.style.borderColor = 'var(--border)';
-                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(42,107,107,0.05)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = gi % 2 === 0 ? 'rgba(138,155,142,0.02)' : 'transparent'}
                     >
-                      <StatusIcon status={plan.status} size={14} />
-                      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {plan.name}
+                      <StatusIcon status={plan.status} size={16} />
+                      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }}>
+                        {plan.title || plan.name}
                       </span>
+                      <span style={{ fontSize: '10px', color: 'var(--text-muted)', flexShrink: 0 }}>{plan.progress}%</span>
                     </div>
                   ))}
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
-          {/* DAY GRID */}
-          <div style={{
-            flex: 1,
-            overflowX: 'auto',
-            overflowY: 'auto',
-            background: 'var(--card)'
-          }} ref={tlScrollRef}>
-            <div style={{ padding: '16px', minWidth: 'fit-content' }}>
-              {/* Day headers */}
+          {/* RIGHT: GANTT CHART */}
+          <div style={{ flex: 1, overflowX: 'auto', overflowY: 'auto', position: 'relative' }} ref={tlScrollRef}>
+            <div style={{ minWidth: daysInMonth * colW + 'px', position: 'relative' }}>
+              {/* Day column headers */}
               <div style={{
-                display: 'grid',
-                gridTemplateColumns: `repeat(${daysInMonth}, 48px)`,
-                gap: '0',
-                marginBottom: '16px',
-                position: 'sticky',
-                top: 0,
-                zIndex: 10,
-                background: 'var(--card)',
-                paddingBottom: '8px',
+                display: 'flex', height: headerH + 'px',
+                position: 'sticky', top: 0, zIndex: 15,
+                background: 'var(--surface)',
                 borderBottom: '1px solid var(--border)'
               }}>
-                {Array.from({ length: daysInMonth }, (_, i) => (
-                  <div
-                    key={`day-${i}`}
-                    style={{
-                      textAlign: 'center',
-                      fontSize: '11px',
-                      fontWeight: 600,
-                      color: todayDate === i + 1 ? 'var(--teal)' : 'var(--text-muted)',
-                      padding: '8px 0',
-                      backgroundColor: todayDate === i + 1 ? 'rgba(42, 107, 107, 0.08)' : 'transparent',
-                      borderRight: '1px solid var(--border-dark)',
-                      borderLeft: i === 0 ? 'none' : 'none'
-                    }}
-                  >
-                    {i + 1}
+                {Array.from({ length: daysInMonth }, (_, i) => {
+                  const d = i + 1;
+                  const dow = new Date(year, month, d).getDay();
+                  const isWeekend = dow === 0 || dow === 6;
+                  const isToday = d === todayDate;
+                  return (
+                    <div key={d} style={{
+                      width: colW + 'px', minWidth: colW + 'px',
+                      display: 'flex', flexDirection: 'column',
+                      alignItems: 'center', justifyContent: 'flex-end',
+                      paddingBottom: '6px', position: 'relative',
+                      borderRight: '1px solid rgba(138,155,142,0.08)',
+                      background: isToday ? 'rgba(42,107,107,0.06)' : isWeekend ? 'rgba(138,155,142,0.03)' : 'transparent'
+                    }}>
+                      <span style={{ fontSize: '9px', color: isWeekend ? 'rgba(138,155,142,0.5)' : 'var(--text-muted)', fontWeight: 400, marginBottom: '2px' }}>
+                        {dayNames[dow]}
+                      </span>
+                      <span style={{
+                        fontSize: '12px', fontWeight: isToday ? 700 : 500,
+                        color: isToday ? 'white' : 'var(--charcoal)',
+                        width: isToday ? '24px' : 'auto', height: isToday ? '24px' : 'auto',
+                        borderRadius: '50%',
+                        background: isToday ? 'var(--teal)' : 'transparent',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        lineHeight: 1
+                      }}>
+                        {d}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Grid rows with bars */}
+              <div style={{ position: 'relative' }}>
+                {/* Vertical grid lines for weeks */}
+                {weekLines.map(d => (
+                  <div key={`wk-${d}`} style={{
+                    position: 'absolute', left: (d - 1) * colW + 'px',
+                    top: 0, bottom: 0, width: '1px',
+                    background: 'rgba(138,155,142,0.15)', zIndex: 1, pointerEvents: 'none'
+                  }} />
+                ))}
+
+                {/* Today vertical line */}
+                {isCurrentMonth && todayDate > 0 && (
+                  <div style={{
+                    position: 'absolute',
+                    left: ((todayDate - 1) * colW + colW / 2) + 'px',
+                    top: 0, bottom: 0, width: '2px',
+                    background: 'var(--teal)', zIndex: 10, pointerEvents: 'none',
+                    opacity: 0.6
+                  }}>
+                    <div style={{
+                      position: 'absolute', top: '-1px', left: '-3px',
+                      width: '8px', height: '8px', borderRadius: '50%',
+                      background: 'var(--teal)'
+                    }} />
+                  </div>
+                )}
+
+                {/* Plan bar rows grouped by objective */}
+                {Object.entries(plansByObjective).map(([objName, plans], gi) => (
+                  <div key={`bars-${objName}`}>
+                    {/* Spacer for group header */}
+                    <div style={{
+                      height: '32px',
+                      background: gi % 2 === 0 ? 'rgba(138,155,142,0.04)' : 'transparent',
+                      borderBottom: '1px solid rgba(138,155,142,0.1)'
+                    }} />
+                    {plans.map((plan) => {
+                      const { startDay, endDay } = getPlanDayRange(plan);
+                      const barLeft = (startDay - 1) * colW + 4;
+                      const barW = Math.max(colW - 8, (endDay - startDay + 1) * colW - 8);
+                      const style = getBarStyle(plan);
+                      const progressW = Math.round(barW * (plan.progress / 100));
+
+                      return (
+                        <div
+                          key={plan.id}
+                          style={{
+                            height: rowH + 'px', position: 'relative',
+                            display: 'flex', alignItems: 'center',
+                            borderBottom: '1px solid rgba(138,155,142,0.08)',
+                            background: gi % 2 === 0 ? 'rgba(138,155,142,0.02)' : 'transparent'
+                          }}
+                        >
+                          {/* The bar */}
+                          <button
+                            onClick={() => setEditingPlan(plan)}
+                            title={`${plan.title || plan.name} — ${plan.progress}% — ${plan.owner || 'Unassigned'}\n${new Date(plan.startDate).toLocaleDateString()} → ${new Date(plan.targetDate).toLocaleDateString()}`}
+                            aria-label={`${plan.title || plan.name}, ${plan.progress}% complete`}
+                            style={{
+                              position: 'absolute', left: barLeft + 'px',
+                              width: barW + 'px', height: '30px',
+                              background: style.bg, backgroundImage: style.ringBg,
+                              border: `1px solid ${style.border}`,
+                              borderRadius: '16px', cursor: 'pointer',
+                              display: 'flex', alignItems: 'center',
+                              padding: '0 10px', gap: '6px',
+                              overflow: 'visible', whiteSpace: 'nowrap',
+                              boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                              transition: 'all 0.2s ease', zIndex: 5,
+                              animation: style.anim
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.12)';
+                              e.currentTarget.style.transform = 'translateY(-1px) scale(1.01)';
+                              e.currentTarget.style.zIndex = '20';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)';
+                              e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                              e.currentTarget.style.zIndex = '5';
+                            }}
+                          >
+                            {/* Progress fill inside bar */}
+                            <div style={{
+                              position: 'absolute', left: 0, top: 0, bottom: 0,
+                              width: progressW + 'px',
+                              background: 'rgba(255,255,255,0.25)',
+                              borderRadius: '16px 0 0 16px',
+                              transition: 'width 0.3s ease'
+                            }} />
+                            <StatusIcon status={plan.status} size={14} />
+                            <span style={{ fontSize: '11px', fontWeight: 600, color: style.text, position: 'relative', zIndex: 2, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {plan.title || plan.name}
+                            </span>
+                            {barW > 120 && (
+                              <span style={{ marginLeft: 'auto', fontSize: '10px', fontWeight: 500, color: style.text, opacity: 0.7, position: 'relative', zIndex: 2, flexShrink: 0 }}>
+                                {plan.progress}%
+                              </span>
+                            )}
+                            {plan.atRisk && (
+                              <span style={{ position: 'relative', zIndex: 2, flexShrink: 0 }}>
+                                <AtRiskOverlay size={12} />
+                              </span>
+                            )}
+                          </button>
+                          {/* Bloom marker at bar endpoint for completed plans */}
+                          {plan.status === STATUS.BLOOMED && endDay <= daysInMonth && (
+                            <div style={{
+                              position: 'absolute',
+                              left: (barLeft + barW + 2) + 'px',
+                              top: '50%', transform: 'translateY(-50%)',
+                              zIndex: 6, opacity: 0.6,
+                              animation: 'fadeIn 0.6s ease-out 0.3s both'
+                            }}>
+                              <svg width="14" height="14" viewBox="0 0 48 48" fill="none">
+                                {[0,1,2,3,4].map(j => {
+                                  const a = (j / 5) * 360 - 90;
+                                  const r = a * Math.PI / 180;
+                                  return <ellipse key={j} cx={24 + Math.cos(r)*8} cy={24 + Math.sin(r)*8} rx="5" ry="8" fill="#8A9B8E" opacity="0.6" transform={`rotate(${a+90} ${24+Math.cos(r)*8} ${24+Math.sin(r)*8})`} />;
+                                })}
+                                <circle cx="24" cy="24" r="4" fill="#8A9B8E" opacity="0.8" />
+                              </svg>
+                            </div>
+                          )}
+                          {/* Seed marker for not-started plans */}
+                          {plan.status === STATUS.SEED && startDay >= 1 && (
+                            <div style={{
+                              position: 'absolute',
+                              left: (barLeft - 12) + 'px',
+                              top: '50%', transform: 'translateY(-50%)',
+                              zIndex: 6, opacity: 0.4
+                            }}>
+                              <svg width="10" height="10" viewBox="0 0 16 16">
+                                <circle cx="8" cy="8" r="4" fill="#C8C3BA" />
+                                <circle cx="8" cy="8" r="2" fill="#D8D4CB" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 ))}
               </div>
-
-              {/* Plan bars for each objective group */}
-              {Object.entries(plansByObjective).map(([objName, plans]) => (
-                <div key={`bars-${objName}`} style={{ marginBottom: '24px' }}>
-                  {plans.map((plan, idx) => {
-                    const { startDay, endDay } = getPlanDayRange(plan);
-                    const barWidth = (endDay - startDay + 1) * 48;
-                    const offsetLeft = (startDay - 1) * 48;
-
-                    // Status-based colors
-                    let barColor = '#E8E5DC';
-                    let barBorder = '#D0CBC4';
-                    if (plan.status === STATUS.SEED) {
-                      barColor = '#D0CBC4';
-                      barBorder = '#B8B3AA';
-                    } else if (plan.status === STATUS.SPROUTING) {
-                      barColor = '#E8C9A4';
-                      barBorder = '#D4A574';
-                    } else if (plan.status === STATUS.BUDDING) {
-                      barColor = '#A8B5AB';
-                      barBorder = '#8A9B8E';
-                    } else if (plan.status === STATUS.BLOOMED) {
-                      barColor = '#8A9B8E';
-                      barBorder = '#6B7F70';
-                    }
-
-                    return (
-                      <div
-                        key={plan.id}
-                        style={{
-                          position: 'relative',
-                          height: '40px',
-                          marginBottom: '6px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        <button
-                          onClick={() => setEditingPlan(plan)}
-                          onKeyPress={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
-                              setEditingPlan(plan);
-                            }
-                          }}
-                          title={`${plan.name} - ${plan.progress}% complete - Owner: ${plan.owner || 'Unassigned'} - Start: ${new Date(plan.startDate).toLocaleDateString()} End: ${new Date(plan.targetDate).toLocaleDateString()}`}
-                          aria-label={`${plan.name}, ${plan.progress}% complete, Status: ${plan.status}, Start: ${new Date(plan.startDate).toLocaleDateString()}, End: ${new Date(plan.targetDate).toLocaleDateString()}`}
-                          style={{
-                            position: 'absolute',
-                            left: offsetLeft,
-                            width: barWidth,
-                            height: '32px',
-                            background: barColor,
-                            borderRadius: '4px',
-                            padding: '6px 10px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            overflow: 'hidden',
-                            whiteSpace: 'nowrap',
-                            boxShadow: 'var(--shadow-sm)',
-                            transition: 'all 0.2s',
-                            border: `1px solid ${barBorder}`,
-                            color: 'var(--charcoal)',
-                            fontSize: '11px',
-                            fontWeight: 600,
-                            cursor: 'pointer'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.boxShadow = 'var(--shadow-md)';
-                            e.currentTarget.style.transform = 'translateY(-2px)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
-                            e.currentTarget.style.transform = 'translateY(0)';
-                          }}
-                        >
-                          <span>{plan.name}</span>
-                          <span style={{ marginLeft: 'auto', fontSize: '10px', opacity: 0.7 }}>{plan.progress}%</span>
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
-
-              {/* Today marker */}
-              {isCurrentMonth && todayDate > 0 && (
-                <div style={{
-                  position: 'absolute',
-                  left: 240 + todayDate * 48 - 24,
-                  top: 0,
-                  width: '2px',
-                  height: '100%',
-                  background: 'var(--teal)',
-                  zIndex: 5,
-                  pointerEvents: 'none'
-                }} />
-              )}
             </div>
           </div>
         </div>
