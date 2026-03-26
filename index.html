@@ -1,0 +1,2492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ImpactQ — Strategic Impact Visualization</title>
+  <link rel="icon" type="image/svg+xml" href="../insightq-favicon.svg">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --surface: #FAFAF7;
+      --card: #FFFFFF;
+      --charcoal: #3D3835;
+      --text-secondary: #5A5550;
+      --text-muted: #7A716A;
+      --sage: #8A9B8E;
+      --sage-dark: #6B7F70;
+      --sage-light: #A8B5AB;
+      --teal: #2A6B6B;
+      --teal-light: #3A8B8B;
+      --teal-dark: #1E5252;
+      --gold: #D4A574;
+      --gold-light: #E8C9A4;
+      --gold-dark: #B8885A;
+      --amber: #C07A6B;
+      --amber-light: #D4A090;
+      --border: #E8E5DC;
+      --border-dark: #D0CBC4;
+      --pale-bg: #EDEAE0;
+      --pale-green: #E8EDE9;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 24px;
+      --shadow-sm: 0 1px 3px rgba(61,56,53,0.06);
+      --shadow-md: 0 4px 16px rgba(61,56,53,0.08);
+      --shadow-lg: 0 8px 32px rgba(61,56,53,0.1);
+      --shadow-xl: 0 20px 60px rgba(61,56,53,0.15);
+      --transition: 0.25s cubic-bezier(0.25, 0.1, 0.25, 1.0);
+      --nav-height: 56px;
+      --mobile-nav: 64px;
+    }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--surface); color: var(--charcoal);
+      min-height: 100vh; overflow-x: hidden;
+      -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+    }
+    h1, h2, h3 { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.08); border-radius: 3px; }
+    button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+      outline: 2px solid var(--teal); outline-offset: 2px;
+    }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes fadeInUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes scaleIn { from { opacity:0; transform:scale(0.92); } to { opacity:1; transform:scale(1); } }
+    @keyframes petalUnfurl { from { opacity:0; transform:scale(0.3) rotate(-30deg); } to { opacity:1; transform:scale(1) rotate(0deg); } }
+    @keyframes seedPulse { 0%,100% { transform:scale(1); filter: drop-shadow(0 0 0 rgba(42,107,107,0)); } 50% { transform:scale(1.04); filter: drop-shadow(0 0 12px rgba(42,107,107,0.2)); } }
+    @keyframes breathe { 0%,100% { opacity:0.12; } 50% { opacity:0.3; } }
+    @keyframes slideDown { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes slideIn { from { opacity:0; transform:translateX(-10px); } to { opacity:1; transform:translateX(0); } }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    }
+    #particle-canvas { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; }
+    @media print {
+      #particle-canvas, nav, .mobile-nav, .fab, [data-no-print] { display:none !important; }
+      body { background:#fff !important; }
+    }
+  </style>
+</head>
+<body>
+<canvas id="particle-canvas" aria-hidden="true"></canvas>
+<div id="root"></div>
+<script>
+window.onerror = function(msg, url, line, col, err) {
+  document.getElementById('root').innerHTML = '<div style="padding:40px;font-family:monospace;color:#c00;white-space:pre-wrap;"><h2>Error Loading App</h2><p>' + msg + '</p><p>Line: ' + line + ', Col: ' + col + '</p><p>' + (err && err.stack ? err.stack : '') + '</p></div>';
+};
+</script>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
+
+// ============================================================
+// CONFIG
+// ============================================================
+const APP_VERSION = 'v3.0';
+const STORAGE_KEY = 'impactq_data_v3';
+const MAX_OBJECTIVES = 7;
+const MAX_PLANS = 8;
+
+const STATUS = {
+  SEED: 'seed',
+  SPROUTING: 'sprouting',
+  BUDDING: 'budding',
+  BLOOMED: 'bloomed'
+};
+
+const STATUS_META = {
+  [STATUS.SEED]: { label: 'Seed', icon: '●', color: '#2A6B6B', bg: 'rgba(42,107,107,0.07)', progress: 0, emoji: '🌱' },
+  [STATUS.SPROUTING]: { label: 'Sprouting', icon: '◐', color: '#6B7F70', bg: 'rgba(107,127,112,0.07)', progress: 25, emoji: '🌿' },
+  [STATUS.BUDDING]: { label: 'Budding', icon: '◑', color: '#8A9B8E', bg: 'rgba(138,155,142,0.07)', progress: 50, emoji: '🌱' },
+  [STATUS.BLOOMED]: { label: 'Bloomed', icon: '✦', color: '#D4A574', bg: 'rgba(212,165,116,0.1)', progress: 85, emoji: '🌸' }
+};
+
+const TRACTION_LEVELS = {
+  ROCK: 'rock',
+  ANNUAL: 'annual',
+  THREE_YEAR: '3year'
+};
+
+// ============================================================
+// DATA HELPERS
+// ============================================================
+const uid = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
+const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+
+function createObjective(title = '', description = '', tractionLevel = TRACTION_LEVELS.ANNUAL) {
+  return {
+    id: uid(),
+    title,
+    description,
+    tractionLevel,
+    plans: [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+}
+
+function createPlan(title = '', status = STATUS.SEED, owner = '', progress = 0, targetDate = null, startDate = null) {
+  return {
+    id: uid(),
+    title,
+    status,
+    progress,
+    owner,
+    targetDate,
+    startDate,
+    atRisk: false,
+    keyResults: [],
+    milestones: [],
+    notes: '',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+}
+
+function calcHealth(plans) {
+  if (!plans || !plans.length) return 0;
+  const w = {
+    [STATUS.BLOOMED]: 100,
+    [STATUS.BUDDING]: 60,
+    [STATUS.SPROUTING]: 30,
+    [STATUS.SEED]: 0
+  };
+  return Math.round(plans.reduce((s, p) => s + (p.progress > 0 ? p.progress : (w[p.status] || 0)), 0) / plans.length);
+}
+
+function healthColor(h) {
+  if (h >= 75) return '#D4A574';
+  if (h >= 50) return '#8A9B8E';
+  if (h >= 25) return '#2A6B6B';
+  return '#C07A6B';
+}
+
+function initials(name) {
+  if (!name) return '?';
+  const parts = name.trim().split(/\s+/);
+  return parts.length >= 2 ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase() : name.substring(0, 2).toUpperCase();
+}
+
+function onTrackCount(plans) {
+  return plans.filter(p => !p.atRisk).length;
+}
+
+function daysRemaining(targetDate) {
+  if (!targetDate) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(targetDate);
+  target.setHours(0, 0, 0, 0);
+  const diff = target - today;
+  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+}
+
+function timeConsumedPercent(startDate, targetDate) {
+  if (!startDate || !targetDate) return 0;
+  const start = new Date(startDate);
+  const target = new Date(targetDate);
+  const today = new Date();
+  const totalDuration = target - start;
+  const elapsed = today - start;
+  const percent = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+  return Math.round(percent);
+}
+
+function getBorderColor(health, atRisk) {
+  if (atRisk) return '#C07A6B';
+  if (health >= 75) return '#D4A574';
+  if (health >= 25) return '#2A6B6B';
+  return '#E8E5DC';
+}
+
+// ============================================================
+// SAMPLE DATA
+// ============================================================
+function sampleData() {
+  const today = new Date();
+  const q1End = new Date(2026, 2, 31);
+  const q2End = new Date(2026, 5, 30);
+  const q3End = new Date(2026, 8, 30);
+  const q4End = new Date(2026, 11, 31);
+
+  return [
+    {
+      ...createObjective('Workforce Excellence', 'Build a high-performing, engaged workforce across all locations', TRACTION_LEVELS.ANNUAL),
+      plans: [
+        { ...createPlan('Leadership Development', STATUS.BLOOMED, 'Ana Torres', 95, q1End.toISOString(), new Date(2026, 0, 15).toISOString()), keyResults: [{id:uid(), text:'Complete 360 feedback program', completed:true}, {id:uid(), text:'Promote 5 internal candidates', completed:true}], milestones:[{id:uid(), text:'Program launch', completed:true}] },
+        { ...createPlan('Talent Acquisition', STATUS.BUDDING, 'David Kim', 60, q2End.toISOString(), new Date(2026, 0, 20).toISOString()), keyResults: [{id:uid(), text:'Hire 12 new staff', completed:false}, {id:uid(), text:'Reduce time-to-hire by 20%', completed:true}], milestones:[{id:uid(), text:'Q2 hiring goal', completed:false}] },
+        { ...createPlan('Performance Systems', STATUS.BUDDING, 'Rachel Obi', 45, q2End.toISOString(), new Date(2026, 0, 25).toISOString()), keyResults: [{id:uid(), text:'Deploy new review system', completed:true}], milestones:[{id:uid(), text:'Training complete', completed:true}] },
+        { ...createPlan('Retention Strategy', STATUS.BLOOMED, 'Marcus Hall', 85, q1End.toISOString(), new Date(2026, 0, 10).toISOString()), keyResults: [{id:uid(), text:'Implement bonus structure', completed:true}], milestones:[{id:uid(), text:'First payouts', completed:true}], atRisk: false },
+        { ...createPlan('Training Programs', STATUS.SPROUTING, 'Priya Shah', 25, q3End.toISOString(), new Date(2026, 0, 30).toISOString()), keyResults: [{id:uid(), text:'Create 3 programs', completed:true}], milestones:[{id:uid(), text:'Launch Q1', completed:false}], atRisk: true },
+      ]
+    },
+    {
+      ...createObjective('Expand Donor Partnerships', 'Grow donor base by 40% through strategic community engagement', TRACTION_LEVELS.ANNUAL),
+      plans: [
+        { ...createPlan('Corporate Donation Program', STATUS.BUDDING, 'Maria Rodriguez', 85, q2End.toISOString(), new Date(2026, 0, 5).toISOString()), keyResults: [{id:uid(), text:'Secure 3 corporate sponsors', completed:true}], milestones:[{id:uid(), text:'First campaign', completed:true}] },
+        { ...createPlan('Foundation Grants', STATUS.BUDDING, 'James Lee', 45, q3End.toISOString(), new Date(2026, 1, 1).toISOString()), keyResults: [{id:uid(), text:'Submit 5 proposals', completed:false}], milestones:[{id:uid(), text:'Research complete', completed:true}] },
+        { ...createPlan('Individual Giving', STATUS.BLOOMED, 'Sarah Kim', 92, q1End.toISOString(), new Date(2025, 11, 15).toISOString()), keyResults: [{id:uid(), text:'Activate 500 donors', completed:true}], milestones:[{id:uid(), text:'Portal launch', completed:true}] },
+        { ...createPlan('Major Gifts', STATUS.SPROUTING, 'Tom Davis', 30, q4End.toISOString(), new Date(2026, 1, 15).toISOString()), keyResults: [{id:uid(), text:'Prospect 10 major donors', completed:true}], milestones:[{id:uid(), text:'Strategy approved', completed:true}] },
+        { ...createPlan('Online Donation Portal', STATUS.SPROUTING, 'Dev Team', 20, q2End.toISOString(), new Date(2026, 0, 1).toISOString()), keyResults: [{id:uid(), text:'Build payment gateway', completed:false}], milestones:[{id:uid(), text:'Beta testing', completed:false}], atRisk: true },
+        { ...createPlan('Donor Recognition', STATUS.SEED, 'Marketing', 0, q3End.toISOString(), new Date(2026, 2, 1).toISOString()), keyResults: [], milestones:[{id:uid(), text:'Kick off', completed:false}] },
+      ]
+    },
+    {
+      ...createObjective('Digital Infrastructure', 'Modernize technology stack to support growth', TRACTION_LEVELS.THREE_YEAR),
+      plans: [
+        { ...createPlan('Cloud Migration', STATUS.BLOOMED, 'Tech Lead', 95, q2End.toISOString(), new Date(2025, 10, 1).toISOString()), keyResults: [{id:uid(), text:'Move 100% of apps', completed:true}], milestones:[{id:uid(), text:'Go-live', completed:true}] },
+        { ...createPlan('POS System Upgrade', STATUS.BLOOMED, 'IT Ops', 100, q1End.toISOString(), new Date(2025, 11, 1).toISOString()), keyResults: [{id:uid(), text:'All locations live', completed:true}], milestones:[{id:uid(), text:'Training done', completed:true}] },
+        { ...createPlan('Data Analytics Platform', STATUS.BUDDING, 'Data Team', 65, q3End.toISOString(), new Date(2026, 1, 1).toISOString()), keyResults: [{id:uid(), text:'Dashboard MVP', completed:true}], milestones:[{id:uid(), text:'Real-time metrics', completed:false}] },
+        { ...createPlan('Mobile App MVP', STATUS.BUDDING, 'Dev Team', 40, q2End.toISOString(), new Date(2026, 0, 15).toISOString()), keyResults: [{id:uid(), text:'iOS app store listing', completed:false}], milestones:[{id:uid(), text:'Beta testing', completed:true}] },
+        { ...createPlan('Cybersecurity Audit', STATUS.BLOOMED, 'Security', 100, q1End.toISOString(), new Date(2025, 11, 15).toISOString()), keyResults: [{id:uid(), text:'All findings resolved', completed:true}], milestones:[{id:uid(), text:'Compliance certified', completed:true}] },
+        { ...createPlan('API Integration Layer', STATUS.BUDDING, 'Backend', 55, q4End.toISOString(), new Date(2026, 0, 20).toISOString()), keyResults: [{id:uid(), text:'10 integrations live', completed:false}], milestones:[{id:uid(), text:'API docs ready', completed:true}] },
+        { ...createPlan('Staff Training Portal', STATUS.SEED, 'L&D', 0, q4End.toISOString(), new Date(2026, 2, 15).toISOString()), keyResults: [], milestones:[{id:uid(), text:'Content creation', completed:false}] },
+        { ...createPlan('Disaster Recovery', STATUS.BLOOMED, 'Infra', 90, q2End.toISOString(), new Date(2025, 11, 20).toISOString()), keyResults: [{id:uid(), text:'Tested and documented', completed:true}], milestones:[{id:uid(), text:'Runbook updated', completed:true}] },
+      ]
+    },
+    {
+      ...createObjective('Community Impact', 'Serve 10,000+ individuals through mission programs', TRACTION_LEVELS.ANNUAL),
+      plans: [
+        { ...createPlan('Local Partnership Network', STATUS.BLOOMED, 'Maria Johnson', 100, q1End.toISOString(), new Date(2025, 11, 1).toISOString()), keyResults: [{id:uid(), text:'25 active partnerships', completed:true}], milestones:[{id:uid(), text:'Full network active', completed:true}] },
+        { ...createPlan('Youth Programs Expansion', STATUS.BUDDING, 'David Williams', 67, q2End.toISOString(), new Date(2026, 0, 10).toISOString()), keyResults: [{id:uid(), text:'Open 2 new centers', completed:true}], milestones:[{id:uid(), text:'Staffing done', completed:false}] },
+        { ...createPlan('Community Health Initiative', STATUS.BLOOMED, 'Sarah Kim', 89, q1End.toISOString(), new Date(2025, 11, 25).toISOString()), keyResults: [{id:uid(), text:'Serve 5000 people', completed:true}], milestones:[{id:uid(), text:'Metrics tracking', completed:true}] },
+        { ...createPlan('Volunteer Engagement Platform', STATUS.BUDDING, 'Tom Chen', 45, q3End.toISOString(), new Date(2026, 1, 20).toISOString()), keyResults: [{id:uid(), text:'500 volunteers signed up', completed:true}], milestones:[{id:uid(), text:'App launch', completed:false}] },
+        { ...createPlan('Impact Measurement System', STATUS.SEED, 'Emily Brown', 0, q4End.toISOString(), new Date(2026, 3, 1).toISOString()), keyResults: [], milestones:[{id:uid(), text:'Framework design', completed:false}] },
+      ]
+    },
+    {
+      ...createObjective('Financial Sustainability', 'Achieve $5M revenue with healthy margins', TRACTION_LEVELS.THREE_YEAR),
+      plans: [
+        { ...createPlan('Revenue Diversification', STATUS.BUDDING, 'CFO', 60, q3End.toISOString(), new Date(2026, 0, 5).toISOString()), keyResults: [{id:uid(), text:'3 new revenue streams', completed:false}], milestones:[{id:uid(), text:'Q2 targets set', completed:true}] },
+        { ...createPlan('Cost Reduction Program', STATUS.BLOOMED, 'Ops', 88, q2End.toISOString(), new Date(2025, 11, 10).toISOString()), keyResults: [{id:uid(), text:'Save $500K annually', completed:true}], milestones:[{id:uid(), text:'Savings tracking live', completed:true}] },
+        { ...createPlan('Grant Pipeline', STATUS.BUDDING, 'Development', 50, q4End.toISOString(), new Date(2026, 1, 5).toISOString()), keyResults: [{id:uid(), text:'$2M in proposals', completed:false}], milestones:[{id:uid(), text:'Q3 submissions', completed:false}] },
+        { ...createPlan('Endowment Growth', STATUS.SEED, 'Board', 0, new Date(2027, 0, 1).toISOString(), new Date(2026, 3, 1).toISOString()), keyResults: [], milestones:[{id:uid(), text:'Board approval', completed:false}] },
+        { ...createPlan('Pricing Strategy', STATUS.BLOOMED, 'Analytics', 100, q1End.toISOString(), new Date(2025, 11, 5).toISOString()), keyResults: [{id:uid(), text:'New pricing live', completed:true}], milestones:[{id:uid(), text:'Customer comms', completed:true}] },
+        { ...createPlan('Financial Reporting', STATUS.BUDDING, 'Finance', 70, q2End.toISOString(), new Date(2026, 0, 1).toISOString()), keyResults: [{id:uid(), text:'Automated dashboards', completed:true}], milestones:[{id:uid(), text:'Monthly reports', completed:true}] },
+        { ...createPlan('Budget Optimization', STATUS.BLOOMED, 'Ops', 95, q1End.toISOString(), new Date(2025, 11, 20).toISOString()), keyResults: [{id:uid(), text:'Zero-based budget', completed:true}], milestones:[{id:uid(), text:'Approvals complete', completed:true}] },
+      ]
+    },
+  ];
+}
+
+// ============================================================
+// PERSISTENCE
+// ============================================================
+function loadData() {
+  try {
+    const r = localStorage.getItem(STORAGE_KEY);
+    if (r) {
+      const p = JSON.parse(r);
+      if (Array.isArray(p) && p.length) return p;
+    }
+  } catch (e) { }
+  return null;
+}
+function saveData(d) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); } catch (e) { } }
+
+// ============================================================
+// PARTICLES
+// ============================================================
+function initParticles() {
+  const c = document.getElementById('particle-canvas');
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  let particles = [], af;
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function resize() { c.width = window.innerWidth; c.height = window.innerHeight; }
+  resize(); window.addEventListener('resize', resize);
+  if (reduced) return;
+  const N = Math.min(35, Math.floor(window.innerWidth / 35));
+  const cols = ['138,155,142', '42,107,107', '212,165,116'];
+  for (let i = 0; i < N; i++) {
+    particles.push({
+      x: Math.random() * c.width, y: Math.random() * c.height,
+      r: 1.2 + Math.random() * 2, vx: (Math.random() - 0.5) * 0.25, vy: (Math.random() - 0.5) * 0.25,
+      col: cols[Math.floor(Math.random() * cols.length)], ph: Math.random() * Math.PI * 2, sp: 0.002 + Math.random() * 0.004,
+    });
+  }
+  function draw() {
+    ctx.clearRect(0, 0, c.width, c.height);
+    const t = Date.now() * 0.001;
+    particles.forEach(p => {
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < -10) p.x = c.width + 10; if (p.x > c.width + 10) p.x = -10;
+      if (p.y < -10) p.y = c.height + 10; if (p.y > c.height + 10) p.y = -10;
+      const o = 0.12 + 0.12 * Math.sin(t * p.sp * 100 + p.ph);
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${p.col},${o})`; ctx.fill();
+    });
+    af = requestAnimationFrame(draw);
+  }
+  draw();
+  return () => cancelAnimationFrame(af);
+}
+
+// ============================================================
+// BOTANICAL SVG ICONS
+// ============================================================
+function SeedIcon({ size = 48, color = '#2A6B6B' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none" role="img" aria-label="Seed stage">
+      <defs>
+        <filter id="seedGlow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="1" result="coloredBlur" />
+        </filter>
+      </defs>
+      <ellipse cx="24" cy="24" rx="10" ry="12" stroke={color} strokeWidth="1.5" strokeDasharray="3 2" opacity="0.7" filter="url(#seedGlow)" />
+      <circle cx="24" cy="24" r="4" fill={color} opacity="0.5" />
+      <circle cx="22" cy="22" r="1" fill={color} opacity="0.4" />
+      <circle cx="26" cy="26" r="1" fill={color} opacity="0.4" />
+    </svg>
+  );
+}
+
+function SproutingIcon({ size = 48, color = '#6B7F70' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none" role="img" aria-label="Sprouting stage">
+      <line x1="24" y1="36" x2="24" y2="18" stroke={color} strokeWidth="1.8" strokeLinecap="round" opacity="0.7" />
+      <ellipse cx="19" cy="14" rx="5" ry="7" fill={color} opacity="0.5" transform="rotate(-20 19 14)" />
+      <circle cx="24" cy="36" r="3.5" stroke={color} strokeWidth="1.5" fill="none" opacity="0.7" />
+      <path d="M 24 16 Q 26 12 27 8" stroke={color} strokeWidth="1" opacity="0.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function BuddingIcon({ size = 48, color = '#8A9B8E' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none" role="img" aria-label="Budding stage">
+      <line x1="24" y1="38" x2="24" y2="18" stroke={color} strokeWidth="1.8" strokeLinecap="round" opacity="0.7" />
+      <ellipse cx="16" cy="16" rx="6" ry="9" fill={color} opacity="0.55" transform="rotate(-30 16 16)" />
+      <ellipse cx="32" cy="16" rx="6" ry="9" fill={color} opacity="0.55" transform="rotate(30 32 16)" />
+      <ellipse cx="24" cy="12" rx="5" ry="8" fill={color} opacity="0.65" />
+      <ellipse cx="20" cy="24" rx="4" ry="6" fill={color} opacity="0.45" transform="rotate(-35 20 24)" />
+      <ellipse cx="28" cy="24" rx="4" ry="6" fill={color} opacity="0.45" transform="rotate(35 28 24)" />
+    </svg>
+  );
+}
+
+function BloomedIcon({ size = 48, color = '#D4A574' }) {
+  const petals = 5;
+  const paths = [];
+  for (let i = 0; i < petals; i++) {
+    const angle = (i / petals) * 360 - 90;
+    const rad = angle * Math.PI / 180;
+    const cx = 24 + Math.cos(rad) * 11;
+    const cy = 24 + Math.sin(rad) * 11;
+    paths.push(
+      <ellipse key={i} cx={cx} cy={cy} rx="6.5" ry="10" fill={color}
+        opacity={0.8 + i * 0.04} transform={`rotate(${angle + 90} ${cx} ${cy})`} />
+    );
+  }
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none" role="img" aria-label="Bloomed stage">
+      {paths}
+      <circle cx="24" cy="24" r="6" fill={color} opacity="0.95" />
+      <circle cx="24" cy="24" r="3" fill="#FFF" opacity="0.5" />
+      <circle cx="24" cy="24" r="1.5" fill={color} opacity="0.3" />
+    </svg>
+  );
+}
+
+function AtRiskOverlay({ size = 24, color = '#C07A6B' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" role="img" aria-label="At-risk indicator">
+      <path d="M12 2L2 20h20L12 2Z" fill={color} opacity="0.85" />
+      <text x="12" y="16" textAnchor="middle" fontSize="10" fontWeight="bold" fill="white">!</text>
+    </svg>
+  );
+}
+
+function StatusIcon({ status, size = 48 }) {
+  const color = STATUS_META[status]?.color || '#2A6B6B';
+  switch (status) {
+    case STATUS.SEED: return <SeedIcon size={size} color={color} />;
+    case STATUS.SPROUTING: return <SproutingIcon size={size} color={color} />;
+    case STATUS.BUDDING: return <BuddingIcon size={size} color={color} />;
+    case STATUS.BLOOMED: return <BloomedIcon size={size} color={color} />;
+    default: return <SeedIcon size={size} color={color} />;
+  }
+}
+
+// ============================================================
+// STATUS PROGRESSION VISUALIZATION
+// ============================================================
+function StatusProgression() {
+  const [expanded, setExpanded] = useState(true);
+  const stages = [
+    { status: STATUS.SEED, label: 'Seed', desc: 'Not Started' },
+    { status: STATUS.SPROUTING, label: 'Sprouting', desc: 'Early Progress' },
+    { status: STATUS.BUDDING, label: 'Budding', desc: 'In Progress' },
+    { status: STATUS.BLOOMED, label: 'Bloomed', desc: 'Complete' },
+  ];
+
+  if (!expanded) {
+    return (
+      <button onClick={() => setExpanded(true)} style={{
+        padding: '12px 16px',
+        borderRadius: 'var(--radius-md)',
+        border: '1px solid var(--border)',
+        background: 'var(--card)',
+        cursor: 'pointer',
+        fontSize: '13px',
+        fontWeight: 500,
+        color: 'var(--text-secondary)',
+        transition: 'all var(--transition)',
+        margin: '20px 0'
+      }}>
+        + Show Status Progression
+      </button>
+    );
+  }
+
+  return (
+    <div style={{
+      padding: '40px 20px',
+      textAlign: 'center',
+      backgroundColor: 'rgba(42, 107, 107, 0.03)',
+      borderRadius: 'var(--radius-lg)',
+      margin: '40px 0',
+      animation: 'fadeIn 0.6s ease-out'
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <h2 style={{ fontFamily: "'Instrument Serif'", fontSize: '24px', marginBottom: 0, color: 'var(--charcoal)' }}>
+          Strategic Growth Stages
+        </h2>
+        <button onClick={() => setExpanded(false)} style={{
+          padding: '4px 8px',
+          border: 'none',
+          background: 'transparent',
+          cursor: 'pointer',
+          fontSize: '16px',
+          color: 'var(--text-muted)'
+        }}>−</button>
+      </div>
+      <p style={{ color: 'var(--text-muted)', marginBottom: '32px', fontSize: '14px' }}>
+        Every initiative follows this natural progression from seed to bloom
+      </p>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-around',
+        alignItems: 'flex-start',
+        flexWrap: 'wrap',
+        gap: '16px',
+        maxWidth: '1000px',
+        margin: '0 auto'
+      }}>
+        {stages.map((s, i) => (
+          <div key={s.status} style={{
+            flex: '1 1 140px',
+            minWidth: '120px',
+            animation: `slideIn 0.4s ease-out ${i * 0.08}s both`
+          }}>
+            <div style={{
+              padding: '24px 12px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '12px'
+            }}>
+              <StatusIcon status={s.status} size={60} />
+              <div>
+                <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--charcoal)' }}>
+                  {s.label}
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                  {s.desc}
+                </div>
+              </div>
+            </div>
+            {i < stages.length - 1 && (
+              <div style={{
+                textAlign: 'center',
+                color: 'var(--border)',
+                fontSize: '18px',
+                marginTop: '-8px'
+              }}>
+                →
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// MODAL with FOCUS TRAP
+// ============================================================
+function Modal({ isOpen, title, children, onClose, footer }) {
+  const modalRef = useRef(null);
+  const firstFocusRef = useRef(null);
+
+  useEffect(() => {
+    if (isOpen && modalRef.current) {
+      const handleKeyDown = (e) => {
+        if (e.key === 'Escape') onClose();
+        if (e.key === 'Tab') {
+          const focusable = modalRef.current.querySelectorAll(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+          );
+          const first = focusable[0];
+          const last = focusable[focusable.length - 1];
+          if (e.shiftKey) {
+            if (document.activeElement === first) {
+              last.focus();
+              e.preventDefault();
+            }
+          } else {
+            if (document.activeElement === last) {
+              first.focus();
+              e.preventDefault();
+            }
+          }
+        }
+      };
+      modalRef.current.addEventListener('keydown', handleKeyDown);
+      firstFocusRef.current?.focus();
+      return () => modalRef.current?.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+  return (
+    <div style={{
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.4)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      zIndex: 1000, animation: 'fadeIn 0.2s'
+    }} onClick={onClose}>
+      <div ref={modalRef} style={{
+        backgroundColor: 'var(--card)',
+        borderRadius: 'var(--radius-lg)',
+        border: '1px solid var(--border)',
+        padding: '24px',
+        maxWidth: '500px',
+        width: '90%',
+        maxHeight: '80vh',
+        overflow: 'auto',
+        boxShadow: 'var(--shadow-xl)',
+        animation: 'scaleIn 0.3s'
+      }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <h2 style={{ fontFamily: "'Instrument Serif'", fontSize: '20px' }}>{title}</h2>
+          <button ref={firstFocusRef} onClick={onClose} style={{
+            background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer',
+            color: 'var(--text-muted)', padding: '8px', width: '44px', height: '44px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--radius-md)'
+          }} aria-label="Close modal">×</button>
+        </div>
+        {children}
+        {footer && <div style={{ marginTop: '24px', display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>{footer}</div>}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// ADD OBJECTIVE MODAL
+// ============================================================
+function AddObjectiveModal({ isOpen, onClose, onAdd }) {
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [traction, setTraction] = useState(TRACTION_LEVELS.ANNUAL);
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      title="Add Objective"
+      onClose={onClose}
+      footer={
+        <>
+          <button onClick={onClose} style={{
+            padding: '8px 16px', borderRadius: 'var(--radius-md)',
+            border: '1px solid var(--border)', background: 'var(--card)',
+            color: 'var(--charcoal)', cursor: 'pointer', fontSize: '13px', fontWeight: 500
+          }}>Cancel</button>
+          <button onClick={() => {
+            if (title.trim()) {
+              onAdd({ title: title.trim(), description: description.trim(), traction });
+              setTitle('');
+              setDescription('');
+              setTraction(TRACTION_LEVELS.ANNUAL);
+              onClose();
+            }
+          }} style={{
+            padding: '8px 16px', borderRadius: 'var(--radius-md)',
+            border: 'none', background: 'var(--teal)',
+            color: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: 500
+          }}>Add Objective</button>
+        </>
+      }
+    >
+      <input
+        type="text"
+        placeholder="Objective title"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        style={{
+          width: '100%', padding: '10px', marginBottom: '12px',
+          border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
+          fontFamily: 'inherit', fontSize: '14px'
+        }}
+      />
+      <textarea
+        placeholder="Description (optional)"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        style={{
+          width: '100%', padding: '10px', marginBottom: '12px', height: '80px',
+          border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
+          fontFamily: 'inherit', fontSize: '14px', resize: 'none'
+        }}
+      />
+      <select
+        value={traction}
+        onChange={(e) => setTraction(e.target.value)}
+        style={{
+          width: '100%', padding: '10px', marginBottom: '12px',
+          border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
+          fontFamily: 'inherit', fontSize: '14px'
+        }}
+      >
+        <option value={TRACTION_LEVELS.ROCK}>Quarterly Rock</option>
+        <option value={TRACTION_LEVELS.ANNUAL}>Annual Plan</option>
+        <option value={TRACTION_LEVELS.THREE_YEAR}>3-Year Picture</option>
+      </select>
+    </Modal>
+  );
+}
+
+// ============================================================
+// ADD PLAN MODAL
+// ============================================================
+function AddPlanModal({ isOpen, onClose, onAdd }) {
+  const [title, setTitle] = useState('');
+  const [owner, setOwner] = useState('');
+  const [targetDate, setTargetDate] = useState('');
+  const [startDate, setStartDate] = useState('');
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      title="Add Plan"
+      onClose={onClose}
+      footer={
+        <>
+          <button onClick={onClose} style={{
+            padding: '8px 16px', borderRadius: 'var(--radius-md)',
+            border: '1px solid var(--border)', background: 'var(--card)',
+            color: 'var(--charcoal)', cursor: 'pointer', fontSize: '13px', fontWeight: 500
+          }}>Cancel</button>
+          <button onClick={() => {
+            if (title.trim()) {
+              onAdd({ title: title.trim(), owner: owner.trim(), targetDate: targetDate || null, startDate: startDate || null });
+              setTitle('');
+              setOwner('');
+              setTargetDate('');
+              setStartDate('');
+              onClose();
+            }
+          }} style={{
+            padding: '8px 16px', borderRadius: 'var(--radius-md)',
+            border: 'none', background: 'var(--teal)',
+            color: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: 500
+          }}>Add Plan</button>
+        </>
+      }
+    >
+      <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Plan Title</label>
+      <input
+        type="text"
+        placeholder="Plan title"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        style={{
+          width: '100%', padding: '10px', marginBottom: '12px',
+          border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
+          fontFamily: 'inherit', fontSize: '14px'
+        }}
+      />
+      <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Owner</label>
+      <input
+        type="text"
+        placeholder="Owner name"
+        value={owner}
+        onChange={(e) => setOwner(e.target.value)}
+        style={{
+          width: '100%', padding: '10px', marginBottom: '12px',
+          border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
+          fontFamily: 'inherit', fontSize: '14px'
+        }}
+      />
+      <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Start Date</label>
+      <input
+        type="date"
+        value={startDate}
+        onChange={(e) => setStartDate(e.target.value)}
+        style={{
+          width: '100%', padding: '10px', marginBottom: '12px',
+          border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
+          fontFamily: 'inherit', fontSize: '14px'
+        }}
+      />
+      <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Target Date</label>
+      <input
+        type="date"
+        value={targetDate}
+        onChange={(e) => setTargetDate(e.target.value)}
+        style={{
+          width: '100%', padding: '10px', marginBottom: '12px',
+          border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
+          fontFamily: 'inherit', fontSize: '14px'
+        }}
+      />
+    </Modal>
+  );
+}
+
+// ============================================================
+// EDIT OBJECTIVE MODAL
+// ============================================================
+function EditObjectiveModal({ isOpen, onClose, objective, onSave }) {
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [traction, setTraction] = useState(TRACTION_LEVELS.ANNUAL);
+
+  useEffect(() => {
+    if (objective) {
+      setTitle(objective.title || '');
+      setDescription(objective.description || '');
+      setTraction(objective.tractionLevel || TRACTION_LEVELS.ANNUAL);
+    }
+  }, [objective]);
+
+  if (!objective) return null;
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      title="Edit Objective"
+      onClose={onClose}
+      footer={
+        <>
+          <button onClick={onClose} style={{
+            padding: '8px 16px', borderRadius: 'var(--radius-md)',
+            border: '1px solid var(--border)', background: 'var(--card)',
+            color: 'var(--charcoal)', cursor: 'pointer', fontSize: '13px', fontWeight: 500
+          }}>Cancel</button>
+          <button onClick={() => {
+            if (title.trim()) {
+              onSave({ ...objective, title: title.trim(), description: description.trim(), tractionLevel: traction, updatedAt: new Date().toISOString() });
+              onClose();
+            }
+          }} style={{
+            padding: '8px 16px', borderRadius: 'var(--radius-md)',
+            border: 'none', background: 'var(--teal)',
+            color: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: 500
+          }}>Save Changes</button>
+        </>
+      }
+    >
+      <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Title</label>
+      <input
+        type="text"
+        placeholder="Objective title"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        style={{
+          width: '100%', padding: '10px', marginBottom: '12px',
+          border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
+          fontFamily: 'inherit', fontSize: '14px'
+        }}
+      />
+      <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Description</label>
+      <textarea
+        placeholder="Description (optional)"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        style={{
+          width: '100%', padding: '10px', marginBottom: '12px', height: '80px',
+          border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
+          fontFamily: 'inherit', fontSize: '14px', resize: 'none'
+        }}
+      />
+      <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Traction Level</label>
+      <select
+        value={traction}
+        onChange={(e) => setTraction(e.target.value)}
+        style={{
+          width: '100%', padding: '10px', marginBottom: '12px',
+          border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
+          fontFamily: 'inherit', fontSize: '14px'
+        }}
+      >
+        <option value={TRACTION_LEVELS.ROCK}>Quarterly Rock</option>
+        <option value={TRACTION_LEVELS.ANNUAL}>Annual Plan</option>
+        <option value={TRACTION_LEVELS.THREE_YEAR}>3-Year Picture</option>
+      </select>
+    </Modal>
+  );
+}
+
+// ============================================================
+// EDIT PLAN MODAL
+// ============================================================
+function EditPlanModal({ isOpen, onClose, plan, onSave }) {
+  const [title, setTitle] = useState('');
+  const [owner, setOwner] = useState('');
+  const [targetDate, setTargetDate] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [progress, setProgress] = useState(0);
+  const [notes, setNotes] = useState('');
+  const [status, setStatus] = useState(STATUS.SEED);
+
+  useEffect(() => {
+    if (plan) {
+      setTitle(plan.title || '');
+      setOwner(plan.owner || '');
+      setTargetDate(plan.targetDate ? plan.targetDate.substring(0, 10) : '');
+      setStartDate(plan.startDate ? plan.startDate.substring(0, 10) : '');
+      setProgress(plan.progress || 0);
+      setNotes(plan.notes || '');
+      setStatus(plan.status || STATUS.SEED);
+    }
+  }, [plan]);
+
+  if (!plan) return null;
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      title="Edit Plan"
+      onClose={onClose}
+      footer={
+        <>
+          <button onClick={onClose} style={{
+            padding: '8px 16px', borderRadius: 'var(--radius-md)',
+            border: '1px solid var(--border)', background: 'var(--card)',
+            color: 'var(--charcoal)', cursor: 'pointer', fontSize: '13px', fontWeight: 500
+          }}>Cancel</button>
+          <button onClick={() => {
+            if (title.trim()) {
+              onSave({
+                ...plan,
+                title: title.trim(),
+                owner: owner.trim(),
+                targetDate: targetDate || null,
+                startDate: startDate || null,
+                progress: Number(progress),
+                notes: notes.trim(),
+                status,
+                updatedAt: new Date().toISOString()
+              });
+              onClose();
+            }
+          }} style={{
+            padding: '8px 16px', borderRadius: 'var(--radius-md)',
+            border: 'none', background: 'var(--teal)',
+            color: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: 500
+          }}>Save Changes</button>
+        </>
+      }
+    >
+      <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Title</label>
+      <input
+        type="text"
+        placeholder="Plan title"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        style={{
+          width: '100%', padding: '10px', marginBottom: '12px',
+          border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
+          fontFamily: 'inherit', fontSize: '14px'
+        }}
+      />
+      <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Owner</label>
+      <input
+        type="text"
+        placeholder="Owner name"
+        value={owner}
+        onChange={(e) => setOwner(e.target.value)}
+        style={{
+          width: '100%', padding: '10px', marginBottom: '12px',
+          border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
+          fontFamily: 'inherit', fontSize: '14px'
+        }}
+      />
+      <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Status</label>
+      <select
+        value={status}
+        onChange={(e) => setStatus(e.target.value)}
+        style={{
+          width: '100%', padding: '10px', marginBottom: '12px',
+          border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
+          fontFamily: 'inherit', fontSize: '14px'
+        }}
+      >
+        <option value={STATUS.SEED}>🌱 Seed</option>
+        <option value={STATUS.SPROUTING}>🌿 Sprouting</option>
+        <option value={STATUS.BUDDING}>🌱 Budding</option>
+        <option value={STATUS.BLOOMED}>🌸 Bloomed</option>
+      </select>
+      <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Progress: {progress}%</label>
+      <input
+        type="range"
+        min="0"
+        max="100"
+        step="5"
+        value={progress}
+        onChange={(e) => setProgress(e.target.value)}
+        style={{
+          width: '100%', marginBottom: '12px', accentColor: 'var(--teal)'
+        }}
+      />
+      <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Start Date</label>
+      <input
+        type="date"
+        value={startDate}
+        onChange={(e) => setStartDate(e.target.value)}
+        style={{
+          width: '100%', padding: '10px', marginBottom: '12px',
+          border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
+          fontFamily: 'inherit', fontSize: '14px'
+        }}
+      />
+      <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Target Date</label>
+      <input
+        type="date"
+        value={targetDate}
+        onChange={(e) => setTargetDate(e.target.value)}
+        style={{
+          width: '100%', padding: '10px', marginBottom: '12px',
+          border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
+          fontFamily: 'inherit', fontSize: '14px'
+        }}
+      />
+      <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Notes</label>
+      <textarea
+        placeholder="Notes (optional)"
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        style={{
+          width: '100%', padding: '10px', marginBottom: '12px', height: '80px',
+          border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
+          fontFamily: 'inherit', fontSize: '14px', resize: 'none'
+        }}
+      />
+    </Modal>
+  );
+}
+
+// ============================================================
+// TRACTION CASCADE HEADER
+// ============================================================
+function TractionCascade() {
+  return (
+    <div style={{
+      padding: '20px',
+      marginBottom: '24px',
+      backgroundColor: 'rgba(138, 155, 142, 0.08)',
+      borderRadius: 'var(--radius-lg)',
+      border: '1px solid rgba(138, 155, 142, 0.3)',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '16px',
+      fontSize: '13px',
+      color: 'var(--text-secondary)',
+      overflow: 'auto'
+    }}>
+      <span style={{ fontWeight: 600, color: 'var(--charcoal)' }}>V/TO Alignment:</span>
+      <span>Vision</span>
+      <span style={{ opacity: 0.5 }}>→</span>
+      <span>3-Year Picture</span>
+      <span style={{ opacity: 0.5 }}>→</span>
+      <span>Annual Plan</span>
+      <span style={{ opacity: 0.5 }}>→</span>
+      <span>Quarterly Rocks</span>
+    </div>
+  );
+}
+
+// ============================================================
+// OBJECTIVE CARD (GARDEN VIEW)
+// ============================================================
+function ObjectiveCard({ objective, onClick, onEdit, onDelete }) {
+  const health = calcHealth(objective.plans);
+  const onTrack = onTrackCount(objective.plans);
+  const total = objective.plans.length;
+  const hasAtRisk = objective.plans.some(p => p.atRisk);
+  const borderColor = getBorderColor(health, hasAtRisk);
+  const tractionLabel = {
+    [TRACTION_LEVELS.ROCK]: 'Strategic Rock',
+    [TRACTION_LEVELS.ANNUAL]: 'Annual Plan',
+    [TRACTION_LEVELS.THREE_YEAR]: '3-Year Picture'
+  }[objective.tractionLevel];
+
+  return (
+    <div onClick={onClick} style={{
+      backgroundColor: 'var(--card)',
+      border: '1px solid var(--border)',
+      borderRadius: 'var(--radius-lg)',
+      padding: '20px',
+      cursor: 'pointer',
+      transition: 'all var(--transition)',
+      animation: 'fadeInUp 0.4s ease-out',
+      position: 'relative',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '12px',
+      borderLeft: `4px solid ${borderColor}`
+    }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'translateY(-4px)';
+        e.currentTarget.style.boxShadow = 'var(--shadow-lg)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+        <div style={{ flex: 1 }}>
+          <h3 style={{ fontFamily: "'Instrument Serif'", fontSize: '16px', marginBottom: '4px', color: 'var(--charcoal)' }}>
+            {objective.title}
+          </h3>
+          <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '8px' }}>
+            {onTrack} of {total} tactical plans on track
+          </p>
+          <span style={{
+            display: 'inline-block',
+            fontSize: '11px',
+            backgroundColor: 'rgba(42, 107, 107, 0.1)',
+            color: 'var(--teal)',
+            padding: '4px 8px',
+            borderRadius: 'var(--radius-sm)',
+            marginBottom: '12px'
+          }}>
+            {tractionLabel}
+          </span>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+          <svg width="56" height="56" viewBox="0 0 56 56" style={{ flexShrink: 0 }} role="img" aria-label={`${health}% health`}>
+            <circle cx="28" cy="28" r="24" fill="none" stroke={healthColor(health)} strokeWidth="4" opacity="0.2" />
+            <circle cx="28" cy="28" r="24" fill="none" stroke={healthColor(health)} strokeWidth="4"
+              strokeDasharray={`${(health / 100) * 150.8} 150.8`}
+              strokeLinecap="round" transform="rotate(-90 28 28)" />
+            <text x="28" y="32" textAnchor="middle" fontSize="14" fontWeight="600" fill={healthColor(health)}>
+              {health}%
+            </text>
+          </svg>
+          <StatusIcon status={objective.plans.length > 0 ? objective.plans[0].status : STATUS.SEED} size={32} />
+        </div>
+      </div>
+      <div style={{
+        display: 'flex',
+        gap: '4px',
+        flexWrap: 'wrap'
+      }}>
+        {objective.plans.slice(0, 8).map(p => (
+          <div key={p.id} style={{
+            width: '8px',
+            height: '8px',
+            borderRadius: '50%',
+            backgroundColor: STATUS_META[p.status]?.color || '#ccc',
+            opacity: p.atRisk ? 1 : 0.8,
+            transition: 'all var(--transition)',
+            border: p.atRisk ? `2px solid #C07A6B` : 'none'
+          }} title={p.title} />
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: '8px', paddingTop: '8px', borderTop: '1px solid var(--border)' }}>
+        <button onClick={(e) => {
+          e.stopPropagation();
+          onEdit();
+        }} style={{
+          padding: '6px 12px', fontSize: '12px', border: '1px solid var(--border)',
+          background: 'var(--card)', borderRadius: 'var(--radius-sm)',
+          cursor: 'pointer', fontWeight: 500, color: 'var(--text-secondary)'
+        }}>Edit</button>
+        <button onClick={(e) => {
+          e.stopPropagation();
+          if (confirm('Delete this objective and all its plans?')) {
+            onDelete();
+          }
+        }} style={{
+          padding: '6px 12px', fontSize: '12px', border: '1px solid #ccc',
+          background: '#fff', borderRadius: 'var(--radius-sm)',
+          cursor: 'pointer', fontWeight: 500, color: '#d32f2f'
+        }}>Delete</button>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// PLAN CARD (BLOOM VIEW)
+// ============================================================
+function PlanCard({ plan, objective, onEdit, onDelete, onStatusChange, onProgressChange, onAtRiskToggle, onKRToggle }) {
+  const statusMeta = STATUS_META[plan.status] || STATUS_META[STATUS.SEED];
+  const krRatio = plan.keyResults.filter(kr => kr.completed).length;
+  const krTotal = plan.keyResults.length;
+  const days = daysRemaining(plan.targetDate);
+  const timePercent = timeConsumedPercent(plan.startDate, plan.targetDate);
+  const borderColor = getBorderColor(plan.progress, plan.atRisk);
+
+  return (
+    <div style={{
+      backgroundColor: 'var(--card)',
+      border: '1px solid var(--border)',
+      borderRadius: 'var(--radius-lg)',
+      padding: '20px',
+      animation: 'fadeInUp 0.4s ease-out',
+      borderLeft: `4px solid ${borderColor}`,
+      position: 'relative'
+    }}>
+      {plan.atRisk && (
+        <div style={{
+          position: 'absolute', top: '12px', right: '12px',
+          display: 'flex', alignItems: 'center', gap: '4px'
+        }}>
+          <AtRiskOverlay size={20} />
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '12px', alignItems: 'flex-start' }}>
+        <StatusIcon status={plan.status} size={40} />
+        <div style={{ flex: 1 }}>
+          <h3 style={{ fontFamily: "'Instrument Serif'", fontSize: '15px', marginBottom: '4px' }}>
+            {plan.title}
+          </h3>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '8px', alignItems: 'center' }}>
+            <button onClick={() => onStatusChange()} style={{
+              fontSize: '11px',
+              backgroundColor: statusMeta.bg,
+              color: statusMeta.color,
+              padding: '4px 8px',
+              borderRadius: 'var(--radius-sm)',
+              fontWeight: 500,
+              border: 'none',
+              cursor: 'pointer',
+              transition: 'all var(--transition)'
+            }} title="Click to cycle status">
+              {statusMeta.label}
+            </button>
+            {plan.targetDate && (
+              <span style={{
+                fontSize: '11px',
+                backgroundColor: days <= 7 ? 'rgba(192, 122, 107, 0.1)' : 'rgba(42, 107, 107, 0.1)',
+                color: days <= 7 ? 'var(--amber)' : 'var(--text-muted)',
+                padding: '4px 8px',
+                borderRadius: 'var(--radius-sm)',
+                fontWeight: 500
+              }}>
+                {days > 0 ? `${days}d left` : days === 0 ? 'Due today' : 'Overdue'}
+              </span>
+            )}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="5"
+              value={plan.progress}
+              onChange={(e) => onProgressChange(Number(e.target.value))}
+              style={{ flex: 1, accentColor: 'var(--teal)', height: '6px', cursor: 'pointer' }}
+              title="Drag to update progress"
+            />
+            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--charcoal)', minWidth: '35px' }}>
+              {plan.progress}%
+            </span>
+          </div>
+          {plan.startDate && plan.targetDate && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+              <div style={{
+                height: '4px',
+                flex: 1,
+                backgroundColor: 'rgba(0,0,0,0.05)',
+                borderRadius: '2px',
+                overflow: 'hidden'
+              }}>
+                <div style={{
+                  height: '100%',
+                  width: `${timePercent}%`,
+                  background: 'rgba(200,200,200,0.6)',
+                  transition: 'width 0.3s'
+                }} />
+              </div>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{timePercent}% time</span>
+            </div>
+          )}
+          {plan.owner && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
+              <div style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: '50%',
+                backgroundColor: 'var(--teal)',
+                color: 'white',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '10px',
+                fontWeight: 600
+              }}>
+                {initials(plan.owner)}
+              </div>
+              <span style={{ color: 'var(--text-secondary)' }}>{plan.owner}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {plan.keyResults && plan.keyResults.length > 0 && (
+        <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid var(--border)' }}>
+          <div style={{ fontSize: '12px', fontWeight: 600, marginBottom: '8px', color: 'var(--charcoal)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Key Results ({krRatio}/{krTotal})</span>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 400 }}>
+              Tip: Make KRs measurable
+            </div>
+          </div>
+          {plan.keyResults.map((kr, i) => (
+            <div key={kr.id || i} style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '8px',
+              fontSize: '13px',
+              marginBottom: '6px',
+              color: kr.completed ? 'var(--text-muted)' : 'var(--text-secondary)'
+            }}>
+              <input type="checkbox" checked={kr.completed || false} style={{ marginTop: '2px', cursor: 'pointer' }} onChange={() => onKRToggle && onKRToggle(kr.id)} />
+              <span style={{ textDecoration: kr.completed ? 'line-through' : 'none' }}>
+                {kr.text}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {plan.milestones && plan.milestones.length > 0 && (
+        <div style={{ marginTop: '12px', fontSize: '12px', color: 'var(--text-muted)' }}>
+          <span style={{ fontWeight: 600 }}>
+            {plan.milestones.filter(m => m.completed).length}/{plan.milestones.length}
+          </span> milestones completed
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: '8px', paddingTop: '12px', borderTop: '1px solid var(--border)', marginTop: '12px' }}>
+        <button onClick={() => onAtRiskToggle()} style={{
+          padding: '6px 12px', fontSize: '12px', border: plan.atRisk ? 'none' : '1px solid var(--border)',
+          background: plan.atRisk ? 'rgba(192, 122, 107, 0.15)' : 'var(--card)',
+          borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontWeight: 500,
+          color: plan.atRisk ? 'var(--amber)' : 'var(--text-secondary)'
+        }}>
+          {plan.atRisk ? 'Remove At-Risk' : 'Mark At-Risk'}
+        </button>
+        <button onClick={() => onEdit()} style={{
+          padding: '6px 12px', fontSize: '12px', border: '1px solid var(--border)',
+          background: 'var(--card)', borderRadius: 'var(--radius-sm)',
+          cursor: 'pointer', fontWeight: 500, color: 'var(--text-secondary)'
+        }}>Edit</button>
+        <button onClick={() => {
+          if (confirm('Delete this plan?')) {
+            onDelete();
+          }
+        }} style={{
+          padding: '6px 12px', fontSize: '12px', border: '1px solid #ccc',
+          background: '#fff', borderRadius: 'var(--radius-sm)',
+          cursor: 'pointer', fontWeight: 500, color: '#d32f2f'
+        }}>Delete</button>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// MAIN APP
+// ============================================================
+function App() {
+  const [objectives, setObjectives] = useState(() => loadData() || sampleData());
+  const [currentView, setCurrentView] = useState('present');
+  const [bloomDropdown, setBloomDropdown] = useState(false);
+  const [selectedObjective, setSelectedObjective] = useState(null);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importText, setImportText] = useState('');
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [showAddObjective, setShowAddObjective] = useState(false);
+  const [showAddPlan, setShowAddPlan] = useState(false);
+  const [editingObjective, setEditingObjective] = useState(null);
+  const [editingPlan, setEditingPlan] = useState(null);
+  const [sortBy, setSortBy] = useState('status');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterOwner, setFilterOwner] = useState('');
+  const [tlMonth, setTlMonth] = useState(() => { const d = new Date(); return { year: d.getFullYear(), month: d.getMonth() }; });
+  const [hoveredPlan, setHoveredPlan] = useState(null);
+  const [todayMarker, setTodayMarker] = useState(true);
+  const tlScrollRef = useRef(null);
+
+  useEffect(() => {
+    saveData(objectives);
+  }, [objectives]);
+
+  useEffect(() => {
+    const cleanup = initParticles();
+    return cleanup;
+  }, []);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const handler = (e) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  const getUniqueOwners = () => {
+    const owners = new Set();
+    objectives.forEach(obj => {
+      obj.plans.forEach(plan => {
+        if (plan.owner) owners.add(plan.owner);
+      });
+    });
+    return Array.from(owners).sort();
+  };
+
+  const sortAndFilterPlans = (plans) => {
+    let result = plans;
+
+    if (filterStatus) {
+      result = result.filter(p => p.status === filterStatus);
+    }
+    if (filterOwner) {
+      result = result.filter(p => p.owner === filterOwner);
+    }
+
+    result.sort((a, b) => {
+      switch(sortBy) {
+        case 'progress':
+          return b.progress - a.progress;
+        case 'duedate':
+          if (!a.targetDate && !b.targetDate) return 0;
+          if (!a.targetDate) return 1;
+          if (!b.targetDate) return -1;
+          return new Date(a.targetDate) - new Date(b.targetDate);
+        case 'owner':
+          return (a.owner || '').localeCompare(b.owner || '');
+        case 'status':
+        default:
+          const statusOrder = [STATUS.SEED, STATUS.SPROUTING, STATUS.BUDDING, STATUS.BLOOMED];
+          return statusOrder.indexOf(a.status) - statusOrder.indexOf(b.status);
+      }
+    });
+
+    return result;
+  };
+
+  // ============================================================
+  // RENDER GARDEN VIEW
+  // ============================================================
+  function renderGardenView() {
+    return (
+      <div style={{ position: 'relative', zIndex: 1 }}>
+        <div style={{ paddingBottom: isMobile ? 'var(--mobile-nav)' : '40px' }}>
+          <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
+            <div style={{
+              marginBottom: '32px',
+              textAlign: 'center',
+              animation: 'fadeIn 0.6s ease-out'
+            }}>
+              <h1 style={{
+                fontFamily: "'Instrument Serif'",
+                fontSize: '36px',
+                marginBottom: '8px',
+                color: 'var(--charcoal)'
+              }}>
+                Strategic Garden
+              </h1>
+              <p style={{
+                fontSize: '15px',
+                color: 'var(--text-muted)',
+                maxWidth: '600px',
+                margin: '0 auto'
+              }}>
+                Watch your strategic initiatives grow from seed to bloom. Each objective card shows the health and status of your tactical plans.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
+              <button onClick={() => setShowAddObjective(true)} style={{
+                padding: '10px 16px', fontSize: '13px', border: 'none',
+                background: 'var(--teal)', color: 'white', borderRadius: 'var(--radius-md)',
+                cursor: 'pointer', fontWeight: 500, transition: 'all var(--transition)'
+              }}>+ Add Objective</button>
+            </div>
+
+            <TractionCascade />
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(320px, 1fr))',
+              gap: '16px',
+              marginBottom: '32px'
+            }}>
+              {objectives.map(obj => (
+                <ObjectiveCard
+                  key={obj.id}
+                  objective={obj}
+                  onClick={() => {
+                    setSelectedObjective(obj);
+                    setCurrentView('bloom');
+                  }}
+                  onEdit={() => {
+                    setEditingObjective(obj);
+                  }}
+                  onDelete={() => {
+                    setObjectives(objectives.filter(o => o.id !== obj.id));
+                  }}
+                />
+              ))}
+            </div>
+
+            <StatusProgression />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================================
+  // RENDER BLOOM VIEW
+  // ============================================================
+  function renderBloomView() {
+    if (!selectedObjective) return null;
+    const filteredPlans = sortAndFilterPlans(selectedObjective.plans);
+
+    return (
+      <div style={{ position: 'relative', zIndex: 1, paddingBottom: isMobile ? 'var(--mobile-nav)' : '40px' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
+          <button onClick={() => {
+            setSelectedObjective(null);
+            setCurrentView('garden');
+          }} style={{
+            background: 'none',
+            border: 'none',
+            color: 'var(--teal)',
+            fontSize: '14px',
+            cursor: 'pointer',
+            padding: '8px 0',
+            marginBottom: '16px',
+            fontWeight: 500
+          }}>
+            ← Back to Garden
+          </button>
+
+          <div style={{
+            backgroundColor: 'var(--card)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '24px',
+            marginBottom: '24px'
+          }}>
+            <h1 style={{
+              fontFamily: "'Instrument Serif'",
+              fontSize: '32px',
+              marginBottom: '8px',
+              color: 'var(--charcoal)'
+            }}>
+              {selectedObjective.title}
+            </h1>
+            {selectedObjective.description && (
+              <p style={{
+                fontSize: '14px',
+                color: 'var(--text-muted)',
+                marginBottom: '16px'
+              }}>
+                {selectedObjective.description}
+              </p>
+            )}
+            <div style={{
+              display: 'flex',
+              gap: '16px',
+              flexWrap: 'wrap',
+              fontSize: '13px',
+              color: 'var(--text-secondary)'
+            }}>
+              <div>Health: <strong>{calcHealth(selectedObjective.plans)}%</strong></div>
+              <div>Plans: <strong>{selectedObjective.plans.length}</strong></div>
+              <div>On Track: <strong>{onTrackCount(selectedObjective.plans)}</strong></div>
+            </div>
+          </div>
+
+          <button onClick={() => setShowAddPlan(true)} style={{
+            padding: '10px 16px', fontSize: '13px', border: 'none',
+            background: 'var(--teal)', color: 'white', borderRadius: 'var(--radius-md)',
+            cursor: 'pointer', fontWeight: 500, marginBottom: '16px'
+          }}>+ Add Plan</button>
+
+          <div style={{
+            display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap',
+            backgroundColor: 'var(--pale-bg)', padding: '12px', borderRadius: 'var(--radius-md)'
+          }}>
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={{
+              padding: '6px 10px', fontSize: '12px', border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-sm)', background: 'var(--card)', cursor: 'pointer'
+            }}>
+              <option value="status">Sort by: Status</option>
+              <option value="progress">Sort by: Progress</option>
+              <option value="duedate">Sort by: Due Date</option>
+              <option value="owner">Sort by: Owner</option>
+            </select>
+            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} style={{
+              padding: '6px 10px', fontSize: '12px', border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-sm)', background: 'var(--card)', cursor: 'pointer'
+            }}>
+              <option value="">All Status</option>
+              <option value={STATUS.SEED}>Seed</option>
+              <option value={STATUS.SPROUTING}>Sprouting</option>
+              <option value={STATUS.BUDDING}>Budding</option>
+              <option value={STATUS.BLOOMED}>Bloomed</option>
+            </select>
+            <select value={filterOwner} onChange={(e) => setFilterOwner(e.target.value)} style={{
+              padding: '6px 10px', fontSize: '12px', border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-sm)', background: 'var(--card)', cursor: 'pointer'
+            }}>
+              <option value="">All Owners</option>
+              {getUniqueOwners().map(owner => (
+                <option key={owner} value={owner}>{owner}</option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(350px, 1fr))',
+            gap: '16px'
+          }}>
+            {filteredPlans.map(plan => (
+              <PlanCard
+                key={plan.id}
+                plan={plan}
+                objective={selectedObjective}
+                onEdit={() => {
+                  setEditingPlan(plan);
+                }}
+                onDelete={() => {
+                  setSelectedObjective({
+                    ...selectedObjective,
+                    plans: selectedObjective.plans.filter(p => p.id !== plan.id)
+                  });
+                  setObjectives(objectives.map(o =>
+                    o.id === selectedObjective.id
+                      ? { ...o, plans: o.plans.filter(p => p.id !== plan.id) }
+                      : o
+                  ));
+                }}
+                onStatusChange={() => {
+                  const statuses = [STATUS.SEED, STATUS.SPROUTING, STATUS.BUDDING, STATUS.BLOOMED];
+                  const currentIdx = statuses.indexOf(plan.status);
+                  const nextIdx = (currentIdx + 1) % statuses.length;
+                  const updatedPlan = { ...plan, status: statuses[nextIdx] };
+                  setSelectedObjective({
+                    ...selectedObjective,
+                    plans: selectedObjective.plans.map(p => p.id === plan.id ? updatedPlan : p)
+                  });
+                  setObjectives(objectives.map(o =>
+                    o.id === selectedObjective.id
+                      ? { ...o, plans: o.plans.map(p => p.id === plan.id ? updatedPlan : p) }
+                      : o
+                  ));
+                }}
+                onProgressChange={(val) => {
+                  const updatedPlan = { ...plan, progress: val };
+                  setSelectedObjective({
+                    ...selectedObjective,
+                    plans: selectedObjective.plans.map(p => p.id === plan.id ? updatedPlan : p)
+                  });
+                  setObjectives(objectives.map(o =>
+                    o.id === selectedObjective.id
+                      ? { ...o, plans: o.plans.map(p => p.id === plan.id ? updatedPlan : p) }
+                      : o
+                  ));
+                }}
+                onAtRiskToggle={() => {
+                  const updatedPlan = { ...plan, atRisk: !plan.atRisk };
+                  setSelectedObjective({
+                    ...selectedObjective,
+                    plans: selectedObjective.plans.map(p => p.id === plan.id ? updatedPlan : p)
+                  });
+                  setObjectives(objectives.map(o =>
+                    o.id === selectedObjective.id
+                      ? { ...o, plans: o.plans.map(p => p.id === plan.id ? updatedPlan : p) }
+                      : o
+                  ));
+                }}
+                onKRToggle={(krId) => {
+                  const updatedPlan = {
+                    ...plan,
+                    keyResults: plan.keyResults.map(kr =>
+                      kr.id === krId ? { ...kr, completed: !kr.completed } : kr
+                    )
+                  };
+                  setSelectedObjective({
+                    ...selectedObjective,
+                    plans: selectedObjective.plans.map(p => p.id === plan.id ? updatedPlan : p)
+                  });
+                  setObjectives(objectives.map(o =>
+                    o.id === selectedObjective.id
+                      ? { ...o, plans: o.plans.map(p => p.id === plan.id ? updatedPlan : p) }
+                      : o
+                  ));
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================================
+  // RENDER PRESENT VIEW
+  // ============================================================
+  function renderPresentView() {
+    return (
+      <div style={{ position: 'relative', zIndex: 1, paddingBottom: isMobile ? 'var(--mobile-nav)' : '40px' }}>
+        <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '20px' }}>
+          <h1 style={{
+            fontFamily: "'Instrument Serif'",
+            fontSize: '28px',
+            marginBottom: '24px',
+            color: 'var(--charcoal)',
+            textAlign: 'center'
+          }}>
+            Strategic Overview
+          </h1>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))',
+            gap: '20px',
+            marginBottom: '40px'
+          }}>
+            {objectives.map(obj => {
+              const health = calcHealth(obj.plans);
+              return (
+                <div key={obj.id} style={{
+                  backgroundColor: 'var(--card)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-lg)',
+                  padding: '24px',
+                  textAlign: 'center',
+                  animation: 'fadeInUp 0.4s ease-out'
+                }}>
+                  <div style={{ marginBottom: '16px' }}>
+                    <StatusIcon status={obj.plans[0]?.status || STATUS.SEED} size={64} />
+                  </div>
+                  <h2 style={{
+                    fontFamily: "'Instrument Serif'",
+                    fontSize: '16px',
+                    marginBottom: '8px',
+                    color: 'var(--charcoal)'
+                  }}>
+                    {obj.title}
+                  </h2>
+                  <div style={{
+                    fontSize: '28px',
+                    fontWeight: 700,
+                    color: healthColor(health),
+                    marginBottom: '8px'
+                  }}>
+                    {health}%
+                  </div>
+                  <div style={{
+                    fontSize: '12px',
+                    color: 'var(--text-muted)',
+                    marginBottom: '16px'
+                  }}>
+                    {onTrackCount(obj.plans)} of {obj.plans.length} plans on track
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <StatusProgression />
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================================
+  // RENDER TIMELINE VIEW (Gantt-style calendar)
+  // ============================================================
+  function renderTimelineView() {
+    const scrollRef = tlScrollRef;
+
+    const daysInMonth = new Date(tlMonth.year, tlMonth.month + 1, 0).getDate();
+    const monthName = new Date(tlMonth.year, tlMonth.month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+    const today = new Date();
+    const isCurrentMonth = today.getFullYear() === tlMonth.year && today.getMonth() === tlMonth.month;
+    const todayDay = today.getDate();
+
+    const DAY_W = isMobile ? 36 : 42;
+    const LABEL_W = isMobile ? 150 : 220;
+    const ROW_H = 38;
+    const GROUP_HEADER_H = 36;
+
+    const prevMonth = () => {
+      setTlMonth(p => p.month === 0 ? { year: p.year - 1, month: 11 } : { year: p.year, month: p.month - 1 });
+    };
+    const nextMonth = () => {
+      setTlMonth(p => p.month === 11 ? { year: p.year + 1, month: 0 } : { year: p.year, month: p.month + 1 });
+    };
+    const goToday = () => {
+      const d = new Date();
+      setTlMonth({ year: d.getFullYear(), month: d.getMonth() });
+    };
+
+    // Calculate bar position for a plan within the current month view
+    function planBar(plan) {
+      if (!plan.startDate && !plan.targetDate) return null;
+      const monthStart = new Date(tlMonth.year, tlMonth.month, 1);
+      const monthEnd = new Date(tlMonth.year, tlMonth.month + 1, 0, 23, 59, 59);
+      const pStart = plan.startDate ? new Date(plan.startDate) : new Date(plan.targetDate);
+      const pEnd = plan.targetDate ? new Date(plan.targetDate) : new Date(plan.startDate);
+      // Check if plan overlaps this month at all
+      if (pEnd < monthStart || pStart > monthEnd) return null;
+      const clampedStart = pStart < monthStart ? 1 : pStart.getDate();
+      const clampedEnd = pEnd > monthEnd ? daysInMonth : pEnd.getDate();
+      return { start: clampedStart, end: clampedEnd, extendsLeft: pStart < monthStart, extendsRight: pEnd > monthEnd };
+    }
+
+    // Status icon for plan bars
+    function statusIcon(status) {
+      if (status === STATUS.SEED) return '●';
+      if (status === STATUS.SPROUTING) return '◐';
+      if (status === STATUS.BUDDING) return '◑';
+      if (status === STATUS.BLOOMED) return '✦';
+      return '●';
+    }
+
+    // Filter objectives that have at least one plan visible this month
+    const visibleObjectives = objectives.map(obj => {
+      const visPlans = obj.plans.filter(p => planBar(p) !== null);
+      return { ...obj, visiblePlans: visPlans };
+    }).filter(obj => obj.visiblePlans.length > 0 || obj.plans.length > 0);
+
+    // Ref callback to scroll to today
+    const scrollToToday = (node) => {
+      if (node && isCurrentMonth) {
+        setTimeout(() => { node.scrollLeft = Math.max(0, (todayDay - 3) * DAY_W); }, 50);
+      }
+    };
+
+    return (
+      <div style={{ position: 'relative', zIndex: 1, paddingBottom: isMobile ? 'var(--mobile-nav)' : '40px' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: isMobile ? '12px 8px' : '20px' }}>
+
+          {/* Header */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            marginBottom: '20px', flexWrap: 'wrap', gap: '12px'
+          }}>
+            <h1 style={{
+              fontFamily: "'Instrument Serif'", fontSize: isMobile ? '24px' : '28px',
+              color: 'var(--charcoal)', margin: 0, letterSpacing: '0.04em', textTransform: 'uppercase'
+            }}>
+              App Timeline
+            </h1>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button onClick={goToday} style={{
+                padding: '6px 12px', fontSize: '12px', fontWeight: 600,
+                background: 'var(--teal)', color: 'white', border: 'none',
+                borderRadius: 'var(--radius-sm)', cursor: 'pointer'
+              }}>Today</button>
+              <button onClick={prevMonth} aria-label="Previous month" style={{
+                width: '32px', height: '32px', border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-sm)', background: 'var(--card)',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '14px', color: 'var(--text-secondary)'
+              }}>‹</button>
+              <div style={{
+                padding: '6px 16px', fontSize: '14px', fontWeight: 600,
+                border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)',
+                background: 'var(--card)', color: 'var(--charcoal)', minWidth: '160px',
+                textAlign: 'center', display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center'
+              }}>
+                <span>📅</span> {monthName}
+              </div>
+              <button onClick={nextMonth} aria-label="Next month" style={{
+                width: '32px', height: '32px', border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-sm)', background: 'var(--card)',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '14px', color: 'var(--text-secondary)'
+              }}>›</button>
+            </div>
+          </div>
+
+          {/* Gantt chart container */}
+          <div style={{
+            backgroundColor: 'var(--card)', border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-lg)', overflow: 'hidden',
+            boxShadow: 'var(--shadow-md)', animation: 'fadeIn 0.4s ease-out'
+          }}>
+            <div style={{ display: 'flex' }}>
+
+              {/* Fixed left label column */}
+              <div style={{ minWidth: LABEL_W, maxWidth: LABEL_W, borderRight: '2px solid var(--border)', flexShrink: 0, zIndex: 2 }}>
+                {/* Day header spacer */}
+                <div style={{ height: '44px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', padding: '0 12px' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                    Objectives / Plans
+                  </span>
+                </div>
+
+                {/* Rows for each objective group */}
+                {visibleObjectives.map((obj, oIdx) => (
+                  <div key={obj.id}>
+                    {/* Objective group header */}
+                    <div style={{
+                      height: GROUP_HEADER_H, display: 'flex', alignItems: 'center', padding: '0 12px',
+                      backgroundColor: 'var(--pale-green)', borderBottom: '1px solid var(--border)',
+                      borderTop: oIdx > 0 ? '1px solid var(--border-dark)' : 'none'
+                    }}>
+                      <span style={{
+                        fontSize: '11px', fontWeight: 700, color: 'var(--teal-dark)',
+                        textTransform: 'uppercase', letterSpacing: '0.06em',
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+                      }}>
+                        {obj.title} &nbsp;|&nbsp; {obj.plans.length} {obj.plans.length === 1 ? 'plan' : 'plans'}
+                      </span>
+                    </div>
+
+                    {/* Plan rows */}
+                    {obj.plans.map((plan, pIdx) => {
+                      const bar = planBar(plan);
+                      const meta = STATUS_META[plan.status];
+                      return (
+                        <div key={plan.id} style={{
+                          height: ROW_H, display: 'flex', alignItems: 'center', padding: '0 12px',
+                          borderBottom: '1px solid var(--border)',
+                          backgroundColor: hoveredPlan === plan.id ? 'rgba(42,107,107,0.03)' : 'transparent',
+                          transition: 'background 0.15s'
+                        }}
+                        onMouseEnter={() => setHoveredPlan(plan.id)}
+                        onMouseLeave={() => setHoveredPlan(null)}
+                        >
+                          <span style={{
+                            fontSize: '12px', marginRight: '6px',
+                            color: meta.color
+                          }}>{statusIcon(plan.status)}</span>
+                          <span style={{
+                            fontSize: '12px', fontWeight: 500, color: 'var(--charcoal)',
+                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1
+                          }} title={plan.title}>
+                            {plan.title}
+                          </span>
+                          {plan.atRisk && <span style={{ fontSize: '10px', color: 'var(--amber)', marginLeft: '4px' }} title="At Risk">⚠</span>}
+                        </div>
+                      );
+                    })}
+
+                    {/* + Add row */}
+                    {obj.plans.length < MAX_PLANS && (
+                      <div style={{
+                        height: ROW_H - 4, display: 'flex', alignItems: 'center', padding: '0 12px',
+                        borderBottom: '1px solid var(--border)', cursor: 'pointer'
+                      }}
+                      onClick={() => {
+                        const found = objectives.find(o => o.id === obj.id);
+                        if (found) { setSelectedObjective(found); setShowAddPlan(true); }
+                      }}
+                      >
+                        <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 500 }}>+ Add</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+                {/* Empty state */}
+                {visibleObjectives.length === 0 && (
+                  <div style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
+                    No objectives yet. Add one from the Garden view.
+                  </div>
+                )}
+              </div>
+
+              {/* Scrollable day columns + bars */}
+              <div ref={scrollToToday} style={{ flex: 1, overflowX: 'auto', overflowY: 'hidden' }}>
+                <div style={{ minWidth: days.length * DAY_W, position: 'relative' }}>
+
+                  {/* Day number header row */}
+                  <div style={{ display: 'flex', height: '44px', borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 1, backgroundColor: 'var(--card)' }}>
+                    {days.map(d => {
+                      const dow = new Date(tlMonth.year, tlMonth.month, d).getDay();
+                      const isWeekend = dow === 0 || dow === 6;
+                      const isToday = isCurrentMonth && d === todayDay;
+                      return (
+                        <div key={d} style={{
+                          width: DAY_W, minWidth: DAY_W, display: 'flex', flexDirection: 'column',
+                          alignItems: 'center', justifyContent: 'center',
+                          borderRight: '1px solid rgba(0,0,0,0.04)',
+                          backgroundColor: isToday ? 'rgba(42,107,107,0.08)' : isWeekend ? 'rgba(0,0,0,0.015)' : 'transparent'
+                        }}>
+                          <span style={{
+                            fontSize: '13px', fontWeight: isToday ? 700 : 500,
+                            color: isToday ? 'var(--teal)' : 'var(--text-secondary)'
+                          }}>{d}</span>
+                          <span style={{
+                            fontSize: '9px', color: isToday ? 'var(--teal)' : 'var(--text-muted)',
+                            fontWeight: isToday ? 600 : 400
+                          }}>
+                            {['Su','Mo','Tu','We','Th','Fr','Sa'][dow]}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Rows matching the left column */}
+                  {visibleObjectives.map((obj, oIdx) => (
+                    <div key={obj.id}>
+                      {/* Objective group header row (empty in the chart area) */}
+                      <div style={{
+                        height: GROUP_HEADER_H, position: 'relative',
+                        backgroundColor: 'var(--pale-green)', borderBottom: '1px solid var(--border)',
+                        borderTop: oIdx > 0 ? '1px solid var(--border-dark)' : 'none',
+                        display: 'flex'
+                      }}>
+                        {days.map(d => (
+                          <div key={d} style={{
+                            width: DAY_W, minWidth: DAY_W, borderRight: '1px solid rgba(0,0,0,0.03)'
+                          }} />
+                        ))}
+                      </div>
+
+                      {/* Plan bar rows */}
+                      {obj.plans.map(plan => {
+                        const bar = planBar(plan);
+                        const meta = STATUS_META[plan.status];
+                        return (
+                          <div key={plan.id} style={{
+                            height: ROW_H, position: 'relative', display: 'flex',
+                            borderBottom: '1px solid var(--border)',
+                            backgroundColor: hoveredPlan === plan.id ? 'rgba(42,107,107,0.03)' : 'transparent',
+                            transition: 'background 0.15s'
+                          }}
+                          onMouseEnter={() => setHoveredPlan(plan.id)}
+                          onMouseLeave={() => setHoveredPlan(null)}
+                          >
+                            {/* Grid lines */}
+                            {days.map(d => {
+                              const dow = new Date(tlMonth.year, tlMonth.month, d).getDay();
+                              const isWeekend = dow === 0 || dow === 6;
+                              return (
+                                <div key={d} style={{
+                                  width: DAY_W, minWidth: DAY_W,
+                                  borderRight: '1px solid rgba(0,0,0,0.04)',
+                                  backgroundColor: isWeekend ? 'rgba(0,0,0,0.01)' : 'transparent'
+                                }} />
+                              );
+                            })}
+
+                            {/* Plan bar overlay */}
+                            {bar && (
+                              <div
+                                title={`${plan.title}\n${plan.owner || 'Unassigned'}\n${meta.label} — ${plan.progress}%`}
+                                style={{
+                                  position: 'absolute',
+                                  top: '6px',
+                                  left: (bar.start - 1) * DAY_W + 4,
+                                  width: (bar.end - bar.start + 1) * DAY_W - 8,
+                                  height: ROW_H - 12,
+                                  backgroundColor: plan.atRisk ? 'var(--amber)' : meta.color,
+                                  opacity: plan.status === STATUS.BLOOMED ? 0.85 : 0.7,
+                                  borderRadius: `${bar.extendsLeft ? '0' : '6'}px ${bar.extendsRight ? '0' : '6'}px ${bar.extendsRight ? '0' : '6'}px ${bar.extendsLeft ? '0' : '6'}px`,
+                                  display: 'flex', alignItems: 'center', padding: '0 8px',
+                                  overflow: 'hidden', cursor: 'pointer',
+                                  transition: 'opacity 0.2s, transform 0.15s',
+                                  transform: hoveredPlan === plan.id ? 'scaleY(1.08)' : 'scaleY(1)',
+                                  boxShadow: hoveredPlan === plan.id ? '0 2px 8px rgba(0,0,0,0.15)' : 'none'
+                                }}
+                              >
+                                <span style={{
+                                  fontSize: '11px', fontWeight: 600, color: 'white',
+                                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                                  textShadow: '0 1px 2px rgba(0,0,0,0.2)'
+                                }}>
+                                  {(bar.end - bar.start + 1) * DAY_W > 80 ? plan.title : ''}
+                                </span>
+
+                                {/* Progress indicator */}
+                                {plan.progress > 0 && (
+                                  <div style={{
+                                    position: 'absolute', bottom: 0, left: 0,
+                                    height: '3px', width: `${plan.progress}%`,
+                                    backgroundColor: 'rgba(255,255,255,0.5)',
+                                    borderRadius: '0 2px 0 0'
+                                  }} />
+                                )}
+                              </div>
+                            )}
+
+                            {/* Today marker line */}
+                            {isCurrentMonth && todayMarker && (
+                              <div style={{
+                                position: 'absolute', top: 0, bottom: 0,
+                                left: (todayDay - 1) * DAY_W + DAY_W / 2,
+                                width: '2px', backgroundColor: 'var(--teal)',
+                                opacity: 0.3, pointerEvents: 'none'
+                              }} />
+                            )}
+                          </div>
+                        );
+                      })}
+
+                      {/* + Add row spacer */}
+                      {obj.plans.length < MAX_PLANS && (
+                        <div style={{ height: ROW_H - 4, borderBottom: '1px solid var(--border)', display: 'flex' }}>
+                          {days.map(d => (
+                            <div key={d} style={{ width: DAY_W, minWidth: DAY_W, borderRight: '1px solid rgba(0,0,0,0.04)' }} />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Legend */}
+          <div style={{
+            display: 'flex', flexWrap: 'wrap', gap: '16px', marginTop: '16px',
+            justifyContent: 'center', padding: '8px 0'
+          }}>
+            {Object.entries(STATUS_META).map(([key, meta]) => (
+              <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div style={{
+                  width: '20px', height: '10px', borderRadius: '3px',
+                  backgroundColor: meta.color, opacity: 0.7
+                }} />
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500 }}>
+                  {meta.label}
+                </span>
+              </div>
+            ))}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ width: '20px', height: '10px', borderRadius: '3px', backgroundColor: 'var(--amber)', opacity: 0.7 }} />
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500 }}>At Risk</span>
+            </div>
+          </div>
+
+          {/* Drag hint */}
+          <div style={{
+            textAlign: 'center', marginTop: '8px', fontSize: '12px',
+            color: 'var(--text-muted)', fontStyle: 'italic'
+          }}>
+            Scroll horizontally to see more days • Click bars for details
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================================
+  // NAVBAR
+  // ============================================================
+  function renderNavbar() {
+    return (
+      <nav role="navigation" aria-label="Main navigation" style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: 'rgba(250, 250, 247, 0.95)',
+        borderBottom: '1px solid var(--border)',
+        backdropFilter: 'blur(10px)',
+        zIndex: 100,
+        height: isMobile ? undefined : 'var(--nav-height)',
+        display: isMobile ? 'none' : 'flex',
+        alignItems: 'center',
+        padding: '0 20px',
+        justifyContent: 'space-between'
+      }}>
+        <h1 style={{
+          fontFamily: "'Instrument Serif'",
+          fontSize: '18px',
+          color: 'var(--charcoal)',
+          margin: 0
+        }}>
+          ImpactQ {APP_VERSION}
+        </h1>
+        <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+          {['present', 'garden', 'timeline'].map(v => (
+            <button
+              key={v}
+              onClick={() => {
+                setCurrentView(v);
+                setSelectedObjective(null);
+                setBloomDropdown(false);
+              }}
+              aria-current={currentView === v ? 'page' : undefined}
+              style={{
+                padding: '8px 16px',
+                borderRadius: 'var(--radius-md)',
+                border: 'none',
+                backgroundColor: currentView === v ? 'var(--teal)' : 'transparent',
+                color: currentView === v ? 'white' : 'var(--text-secondary)',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: 500,
+                transition: 'all var(--transition)'
+              }}>
+              {v === 'present' ? 'Overview' : v.charAt(0).toUpperCase() + v.slice(1)}
+            </button>
+          ))}
+
+          {/* Bloom tab with hover dropdown */}
+          <div
+            style={{ position: 'relative' }}
+            onMouseEnter={() => setBloomDropdown(true)}
+            onMouseLeave={() => setBloomDropdown(false)}
+          >
+            <button
+              onClick={() => {
+                if (selectedObjective) {
+                  setCurrentView('bloom');
+                } else {
+                  setBloomDropdown(!bloomDropdown);
+                }
+              }}
+              aria-current={currentView === 'bloom' ? 'page' : undefined}
+              style={{
+                padding: '8px 16px',
+                borderRadius: 'var(--radius-md)',
+                border: 'none',
+                backgroundColor: currentView === 'bloom' ? 'var(--teal)' : 'transparent',
+                color: currentView === 'bloom' ? 'white' : 'var(--text-secondary)',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: 500,
+                transition: 'all var(--transition)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}>
+              Bloom <span style={{ fontSize: '10px', opacity: 0.7 }}>▾</span>
+            </button>
+
+            {bloomDropdown && objectives.length > 0 && (
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                marginTop: '4px',
+                backgroundColor: 'var(--card)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-md)',
+                boxShadow: 'var(--shadow-lg)',
+                minWidth: '240px',
+                zIndex: 200,
+                overflow: 'hidden',
+                animation: 'slideDown 0.15s ease-out'
+              }}>
+                <div style={{
+                  padding: '8px 12px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  color: 'var(--text-muted)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  borderBottom: '1px solid var(--border)'
+                }}>
+                  Select Initiative
+                </div>
+                {objectives.map(obj => {
+                  const health = calcHealth(obj.plans);
+                  return (
+                    <button
+                      key={obj.id}
+                      onClick={() => {
+                        setSelectedObjective(obj);
+                        setCurrentView('bloom');
+                        setBloomDropdown(false);
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        width: '100%',
+                        padding: '10px 12px',
+                        border: 'none',
+                        background: selectedObjective && selectedObjective.id === obj.id ? 'rgba(42,107,107,0.06)' : 'transparent',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                        color: 'var(--charcoal)',
+                        textAlign: 'left',
+                        transition: 'background 0.1s',
+                        borderBottom: '1px solid var(--border)'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(42,107,107,0.05)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = selectedObjective && selectedObjective.id === obj.id ? 'rgba(42,107,107,0.06)' : 'transparent'}
+                    >
+                      <div style={{
+                        width: '8px', height: '8px', borderRadius: '50%',
+                        backgroundColor: healthColor(health), flexShrink: 0
+                      }} />
+                      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {obj.title}
+                      </span>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', flexShrink: 0 }}>
+                        {health}%
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+        <button onClick={() => setShowImportModal(true)} style={{
+          padding: '8px 16px',
+          borderRadius: 'var(--radius-md)',
+          border: '1px solid var(--teal)',
+          backgroundColor: 'transparent',
+          color: 'var(--teal)',
+          cursor: 'pointer',
+          fontSize: '13px',
+          fontWeight: 500,
+          transition: 'all var(--transition)'
+        }}>
+          Import Plan
+        </button>
+      </nav>
+    );
+  }
+
+  // ============================================================
+  // MOBILE NAV
+  // ============================================================
+  function renderMobileNav() {
+    if (!isMobile) return null;
+    return (
+      <div style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: 'rgba(250, 250, 247, 0.95)',
+        borderTop: '1px solid var(--border)',
+        backdropFilter: 'blur(10px)',
+        display: 'flex',
+        justifyContent: 'space-around',
+        zIndex: 100,
+        height: 'var(--mobile-nav)',
+        paddingBottom: 'max(8px, env(safe-area-inset-bottom))'
+      }}>
+        {[
+          { id: 'present', label: 'Overview', icon: '📊' },
+          { id: 'garden', label: 'Garden', icon: '🌿' },
+          { id: 'timeline', label: 'Timeline', icon: '📅' },
+          { id: 'bloom', label: 'Bloom', icon: '🌸' }
+        ].map(t => (
+          <button key={t.id} onClick={() => {
+            setCurrentView(t.id);
+            if (t.id !== 'bloom') setSelectedObjective(null);
+          }} style={{
+            flex: 1,
+            background: 'none',
+            border: 'none',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '4px',
+            color: currentView === t.id ? 'var(--teal)' : 'var(--text-muted)',
+            fontSize: '12px',
+            cursor: 'pointer',
+            padding: '8px',
+            transition: 'color var(--transition)'
+          }}>
+            <span style={{ fontSize: '20px' }}>{t.icon}</span>
+            <span>{t.label}</span>
+          </button>
+        ))}
+      </div>
+    );
+  }
+
+  // ============================================================
+  // RENDER
+  // ============================================================
+  const currentContent = selectedObjective && currentView === 'bloom'
+    ? renderBloomView()
+    : currentView === 'present'
+      ? renderPresentView()
+      : currentView === 'timeline'
+        ? renderTimelineView()
+        : renderGardenView();
+
+  return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      minHeight: '100vh',
+      backgroundColor: 'var(--surface)'
+    }}>
+      {renderNavbar()}
+      <main style={{
+        flex: 1,
+        marginTop: isMobile ? 0 : 'var(--nav-height)',
+        paddingTop: isMobile ? '12px' : '20px'
+      }}>
+        {currentContent}
+      </main>
+      {renderMobileNav()}
+
+      <AddObjectiveModal
+        isOpen={showAddObjective}
+        onClose={() => setShowAddObjective(false)}
+        onAdd={({ title, description, traction }) => {
+          const newObj = createObjective(title, description, traction);
+          setObjectives([...objectives, newObj]);
+        }}
+      />
+
+      <AddPlanModal
+        isOpen={showAddPlan}
+        onClose={() => setShowAddPlan(false)}
+        onAdd={({ title, owner, targetDate, startDate }) => {
+          if (selectedObjective) {
+            const newPlan = createPlan(title, STATUS.SEED, owner, 0, targetDate, startDate);
+            const updated = {
+              ...selectedObjective,
+              plans: [...selectedObjective.plans, newPlan]
+            };
+            setSelectedObjective(updated);
+            setObjectives(objectives.map(o => o.id === selectedObjective.id ? updated : o));
+          }
+        }}
+      />
+
+      <EditObjectiveModal
+        isOpen={!!editingObjective}
+        onClose={() => setEditingObjective(null)}
+        objective={editingObjective}
+        onSave={(updatedObj) => {
+          setObjectives(objectives.map(o => o.id === updatedObj.id ? updatedObj : o));
+          if (selectedObjective && selectedObjective.id === updatedObj.id) {
+            setSelectedObjective(updatedObj);
+          }
+          setEditingObjective(null);
+        }}
+      />
+
+      <EditPlanModal
+        isOpen={!!editingPlan}
+        onClose={() => setEditingPlan(null)}
+        plan={editingPlan}
+        onSave={(updatedPlan) => {
+          const updatePlanInObjectives = (objs) => objs.map(obj => ({
+            ...obj,
+            plans: obj.plans.map(p => p.id === updatedPlan.id ? updatedPlan : p)
+          }));
+          setObjectives(updatePlanInObjectives(objectives));
+          if (selectedObjective) {
+            setSelectedObjective({
+              ...selectedObjective,
+              plans: selectedObjective.plans.map(p => p.id === updatedPlan.id ? updatedPlan : p)
+            });
+          }
+          setEditingPlan(null);
+        }}
+      />
+
+      <Modal
+        isOpen={showImportModal}
+        title="Import Strategic Plan"
+        onClose={() => {
+          setShowImportModal(false);
+          setImportText('');
+        }}
+        footer={
+          <>
+            <button onClick={() => {
+              setShowImportModal(false);
+              setImportText('');
+            }} style={{
+              padding: '8px 16px',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--border)',
+              background: 'var(--card)',
+              color: 'var(--charcoal)',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: 500,
+              transition: 'all var(--transition)'
+            }}>
+              Cancel
+            </button>
+            <button onClick={() => {
+              setShowImportModal(false);
+              setImportText('');
+            }} style={{
+              padding: '8px 16px',
+              borderRadius: 'var(--radius-md)',
+              border: 'none',
+              background: 'var(--teal)',
+              color: 'white',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: 500,
+              transition: 'all var(--transition)'
+            }}>
+              Parse & Import
+            </button>
+          </>
+        }
+      >
+        <textarea
+          placeholder="Paste your strategic plan document here..."
+          value={importText}
+          onChange={(e) => setImportText(e.target.value)}
+          style={{
+            width: '100%',
+            height: '200px',
+            padding: '12px',
+            borderRadius: 'var(--radius-md)',
+            border: '1px solid var(--border)',
+            fontFamily: 'monospace',
+            fontSize: '12px',
+            color: 'var(--charcoal)',
+            resize: 'none',
+            marginBottom: '12px'
+          }}
+        />
+        <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>
+          The app will parse headers, numbered lists, and bullet points to extract objectives and tactical plans.
+        </p>
+      </Modal>
+    </div>
+  );
+}
+
+// ============================================================
+// MOUNT
+// ============================================================
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+</body>
+</html>
