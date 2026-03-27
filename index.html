@@ -157,11 +157,68 @@ const STATUS = {
 };
 
 const STATUS_META = {
-  [STATUS.SEED]: { label: 'Seed', icon: '●', color: '#2A6B6B', bg: 'rgba(42,107,107,0.07)', progress: 0, emoji: '🌱' },
-  [STATUS.SPROUTING]: { label: 'Sprouting', icon: '◐', color: '#6B7F70', bg: 'rgba(107,127,112,0.07)', progress: 25, emoji: '🌿' },
-  [STATUS.BUDDING]: { label: 'Budding', icon: '◑', color: '#A89B6B', bg: 'rgba(168,155,107,0.07)', progress: 50, emoji: '🌼' },
-  [STATUS.BLOOMED]: { label: 'Bloomed', icon: '✦', color: '#F5D876', bg: 'rgba(245,216,118,0.1)', progress: 85, emoji: '🌻' }
+  [STATUS.SEED]: { label: 'Seed', icon: '●', color: '#8B7355', bg: 'rgba(139,115,85,0.07)', progress: 0, desc: 'Planted & Planned' },
+  [STATUS.SPROUTING]: { label: 'Sprouting', icon: '◐', color: '#5A8F5A', bg: 'rgba(90,143,90,0.07)', progress: 25, desc: 'Taking Root' },
+  [STATUS.BUDDING]: { label: 'Flourishing', icon: '◑', color: '#C4956A', bg: 'rgba(196,149,106,0.07)', progress: 50, desc: 'Gaining Momentum' },
+  [STATUS.BLOOMED]: { label: 'Bloomed', icon: '✦', color: '#2A6B6B', bg: 'rgba(42,107,107,0.1)', progress: 85, desc: 'Goal Achieved' }
 };
+
+// Inline SVG botanical icons — matches the garden header illustrations
+function StageIcon({ status, size = 18 }) {
+  const s = size;
+  const half = s / 2;
+  if (status === STATUS.SEED) {
+    return (
+      <svg width={s} height={s} viewBox="0 0 48 48" fill="none" style={{ display: 'inline-block', verticalAlign: 'middle' }}>
+        <ellipse cx="24" cy="36" rx="10" ry="4" fill="#C4B59A" opacity="0.4" />
+        <path d="M24 34 C24 28 20 24 20 20 C20 15 22 12 24 12 C26 12 28 15 28 20 C28 24 24 28 24 34Z" fill="#8B7355" />
+        <path d="M22 18 C20 16 18 17 17 19" stroke="#5A8F5A" strokeWidth="1.5" fill="none" strokeLinecap="round" opacity="0.6" />
+        <circle cx="24" cy="20" r="1.5" fill="#C4B59A" opacity="0.5" />
+      </svg>
+    );
+  }
+  if (status === STATUS.SPROUTING) {
+    return (
+      <svg width={s} height={s} viewBox="0 0 48 48" fill="none" style={{ display: 'inline-block', verticalAlign: 'middle' }}>
+        <ellipse cx="24" cy="38" rx="8" ry="3" fill="#C4B59A" opacity="0.3" />
+        <path d="M24 38 L24 22" stroke="#5A8F5A" strokeWidth="2" strokeLinecap="round" />
+        <path d="M24 28 C20 26 17 22 16 18" stroke="#5A8F5A" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+        <path d="M16 18 C16 16 18 14 20 14 C22 14 24 18 24 22" fill="#7AB87A" opacity="0.7" />
+        <path d="M24 24 C28 22 30 18 30 16" stroke="#5A8F5A" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+        <path d="M30 16 C30 14 28 12 26 13 C24 14 24 18 24 20" fill="#8FC88F" opacity="0.6" />
+      </svg>
+    );
+  }
+  if (status === STATUS.BUDDING) {
+    return (
+      <svg width={s} height={s} viewBox="0 0 48 48" fill="none" style={{ display: 'inline-block', verticalAlign: 'middle' }}>
+        <ellipse cx="24" cy="40" rx="7" ry="2.5" fill="#C4B59A" opacity="0.3" />
+        <path d="M24 40 L24 20" stroke="#5A8F5A" strokeWidth="2" strokeLinecap="round" />
+        <path d="M24 30 C19 28 16 24 15 20" stroke="#5A8F5A" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+        <path d="M15 20 C15 17 18 15 20 16 C22 17 24 22 24 26" fill="#7AB87A" opacity="0.6" />
+        <path d="M24 28 C29 26 32 22 33 19" stroke="#5A8F5A" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+        <path d="M33 19 C33 17 30 15 28 16 C26 17 24 22 24 25" fill="#8FC88F" opacity="0.5" />
+        <circle cx="24" cy="16" r="5" fill="#F2D4B0" opacity="0.8" />
+        <circle cx="24" cy="16" r="3.5" fill="#E8B88A" opacity="0.7" />
+        <path d="M22 14 C22 12 24 10 24 10 C24 10 26 12 26 14" fill="#C4956A" opacity="0.6" />
+      </svg>
+    );
+  }
+  // BLOOMED
+  return (
+    <svg width={s} height={s} viewBox="0 0 48 48" fill="none" style={{ display: 'inline-block', verticalAlign: 'middle' }}>
+      <ellipse cx="24" cy="42" rx="6" ry="2" fill="#C4B59A" opacity="0.3" />
+      <path d="M24 42 L24 24" stroke="#5A8F5A" strokeWidth="2" strokeLinecap="round" />
+      <path d="M24 34 C18 32 14 28 14 24" stroke="#5A8F5A" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+      <path d="M14 24 C14 21 17 19 19 20 C21 21 24 26 24 30" fill="#7AB87A" opacity="0.5" />
+      <path d="M24 32 C30 30 34 26 34 23" stroke="#5A8F5A" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+      <path d="M34 23 C34 20 31 19 29 20 C27 21 24 26 24 29" fill="#8FC88F" opacity="0.4" />
+      {[0,1,2,3,4,5,6,7].map(j => { const a=(j/8)*360; const r=a*Math.PI/180; const px=24+Math.cos(r)*8; const py=14+Math.sin(r)*8; return <ellipse key={j} cx={px} cy={py} rx="4" ry="6.5" fill={j%2===0?'#D4A574':'#E8C49A'} opacity={0.75} transform={`rotate(${a+90} ${px} ${py})`} />; })}
+      <circle cx="24" cy="14" r="4.5" fill="#C9A94E" />
+      <circle cx="24" cy="14" r="2.5" fill="#8B7355" opacity="0.5" />
+    </svg>
+  );
+}
 
 const TRACTION_LEVELS = {
   ROCK: 'rock',
@@ -945,10 +1002,10 @@ function EditPlanModal({ isOpen, onClose, plan, onSave }) {
           fontFamily: 'inherit', fontSize: '14px'
         }}
       >
-        <option value={STATUS.SEED}>🌱 Seed</option>
-        <option value={STATUS.SPROUTING}>🌿 Sprouting</option>
-        <option value={STATUS.BUDDING}>🌼 Budding</option>
-        <option value={STATUS.BLOOMED}>🌻 Bloomed</option>
+        <option value={STATUS.SEED}>● Seed</option>
+        <option value={STATUS.SPROUTING}>◐ Sprouting</option>
+        <option value={STATUS.BUDDING}>◑ Flourishing</option>
+        <option value={STATUS.BLOOMED}>✦ Bloomed</option>
       </select>
       <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Progress: {progress}%</label>
       <input
@@ -1143,9 +1200,9 @@ function PlanCard({ plan, objective, onEdit, onDelete, onStatusChange, onProgres
     else if (current === STATUS.BUDDING) newStatus = STATUS.BLOOMED;
 
     // Trigger celebration
-    if (newStatus === STATUS.SPROUTING) setCelebrationEmoji('🌿');
-    else if (newStatus === STATUS.BUDDING) setCelebrationEmoji('🌼');
-    else if (newStatus === STATUS.BLOOMED) setCelebrationEmoji('🌻');
+    if (newStatus === STATUS.SPROUTING) setCelebrationEmoji('✦');
+    else if (newStatus === STATUS.BUDDING) setCelebrationEmoji('✦');
+    else if (newStatus === STATUS.BLOOMED) setCelebrationEmoji('✦');
 
     setTimeout(() => setCelebrationEmoji(null), 1200);
     onStatusChange();
@@ -1799,10 +1856,10 @@ function App() {
   // ============================================================
   function renderGardenView() {
     const growthStages = [
-      { status: STATUS.SEED, label: 'Seed', desc: 'Not Started' },
-      { status: STATUS.SPROUTING, label: 'Sprouting', desc: 'Early Progress' },
-      { status: STATUS.BUDDING, label: 'Budding', desc: 'In Progress' },
-      { status: STATUS.BLOOMED, label: 'Bloomed', desc: 'Complete' },
+      { status: STATUS.SEED, label: 'Seed', desc: 'Planted & Planned' },
+      { status: STATUS.SPROUTING, label: 'Sprouting', desc: 'Taking Root' },
+      { status: STATUS.BUDDING, label: 'Flourishing', desc: 'Gaining Momentum' },
+      { status: STATUS.BLOOMED, label: 'Bloomed', desc: 'Goal Achieved' },
     ];
 
     const allPlansFlat = objectives.flatMap(o => o.plans);
@@ -1862,10 +1919,10 @@ function App() {
                 }}>Strategic Garden</h1>
                 <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                   {[
-                    { value: objectives.length, icon: '🌿', label: 'Initiatives' },
-                    { value: totalPlans, icon: '📋', label: 'Plans' },
-                    { value: avgHealth + '%', icon: '💚', label: 'Health' },
-                    { value: atRiskCount, icon: '⚠️', label: 'At Risk' }
+                    { value: objectives.length, icon: 'sprout', label: 'Initiatives' },
+                    { value: totalPlans, icon: 'plans', label: 'Plans' },
+                    { value: avgHealth + '%', icon: 'health', label: 'Health' },
+                    { value: atRiskCount, icon: 'risk', label: 'At Risk' }
                   ].map((m, i) => (
                     <div key={i} style={{
                       display: 'inline-flex', alignItems: 'center', gap: '6px',
@@ -1873,7 +1930,13 @@ function App() {
                       border: '1px solid var(--border)', fontSize: '12px', fontWeight: 500,
                       color: 'var(--text-secondary)'
                     }}>
-                      <span>{m.icon}</span><span>{m.value}</span>
+                      <span>{m.icon === 'sprout' ? <StageIcon status={STATUS.SPROUTING} size={14} /> : m.icon === 'plans' ? (
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ display: 'inline-block', verticalAlign: 'middle' }}><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.5" fill="none" /><line x1="5" y1="6" x2="11" y2="6" stroke="currentColor" strokeWidth="1" /><line x1="5" y1="8.5" x2="11" y2="8.5" stroke="currentColor" strokeWidth="1" /><line x1="5" y1="11" x2="9" y2="11" stroke="currentColor" strokeWidth="1" /></svg>
+                      ) : m.icon === 'health' ? (
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ display: 'inline-block', verticalAlign: 'middle' }}><path d="M8 14 C4 10 1 7.5 1 5 C1 3 2.5 1.5 4.5 1.5 C6 1.5 7.2 2.5 8 3.5 C8.8 2.5 10 1.5 11.5 1.5 C13.5 1.5 15 3 15 5 C15 7.5 12 10 8 14Z" fill="#5A8F5A" opacity="0.7" /></svg>
+                      ) : (
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ display: 'inline-block', verticalAlign: 'middle' }}><path d="M8 1 L9.5 5.5 L14 5.5 L10.5 8.5 L11.5 13 L8 10.5 L4.5 13 L5.5 8.5 L2 5.5 L6.5 5.5Z" fill="#C4956A" opacity="0.8" /></svg>
+                      )}</span><span>{m.value}</span>
                     </div>
                   ))}
                 </div>
@@ -1891,7 +1954,7 @@ function App() {
                 marginLeft: 'auto',
                 marginRight: 'auto'
               }}>
-                Every strategic initiative follows nature's rhythm — planted as a <strong style={{ color: '#8B7355' }}>Seed</strong>, nurtured through <strong style={{ color: '#5A8F5A' }}>Sprouting</strong> progress, shaped during the <strong style={{ color: '#C4956A' }}>Budding</strong> phase, and celebrated at full <strong style={{ color: '#2A6B6B' }}>Bloom</strong>. Track your organization's growth the way nature intended.
+                Strategic progress mirrors nature's growth cycle. Ideas are planted as a <strong style={{ color: '#8B7355' }}>Seed</strong>, gain early traction while <strong style={{ color: '#5A8F5A' }}>Sprouting</strong>, build momentum as they begin <strong style={{ color: '#C4956A' }}>Flourishing</strong>, and deliver measurable impact at full <strong style={{ color: '#2A6B6B' }}>Bloom</strong>. Track your organization's growth the way nature intended.
               </p>
 
               {/* Growth Journey: Seed → Sprouting → Budding → Bloomed */}
@@ -2210,15 +2273,10 @@ function App() {
                         <div style={{ fontSize: '13px', color: atRiskCount > 0 ? 'var(--amber)' : 'var(--sage)' }}>
                           {atRiskCount}
                         </div>
-                        <div style={{ display: 'flex', gap: '8px', fontSize: '12px' }}>
-                          {[
-                            { emoji: '🌱', count: stageCounts[STATUS.SEED] || 0 },
-                            { emoji: '🌿', count: stageCounts[STATUS.SPROUTING] || 0 },
-                            { emoji: '🌼', count: stageCounts[STATUS.BUDDING] || 0 },
-                            { emoji: '🌻', count: stageCounts[STATUS.BLOOMED] || 0 }
-                          ].map((s) => (
-                            <span key={s.emoji} style={{ color: 'var(--text-muted)' }}>
-                              {s.emoji} {s.count}
+                        <div style={{ display: 'flex', gap: '10px', fontSize: '12px', alignItems: 'center' }}>
+                          {[STATUS.SEED, STATUS.SPROUTING, STATUS.BUDDING, STATUS.BLOOMED].map((st) => (
+                            <span key={st} style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', color: 'var(--text-muted)' }}>
+                              <StageIcon status={st} size={16} /> {stageCounts[st] || 0}
                             </span>
                           ))}
                         </div>
@@ -2272,7 +2330,7 @@ function App() {
                   border: '1px solid rgba(138, 155, 142, 0.15)',
                   animation: 'fadeIn 1s ease-out 0.3s both'
                 }}>
-                  <span style={{ fontSize: '18px', opacity: 0.6 }}>🌱</span>
+                  <span style={{ opacity: 0.5 }}><StageIcon status={STATUS.SEED} size={20} /></span>
                   <p style={{
                     fontFamily: "'Instrument Serif'",
                     fontSize: '15px',
@@ -2291,7 +2349,7 @@ function App() {
                       marginLeft: '4px'
                     }}>— {q.author}</span>
                   </p>
-                  <span style={{ fontSize: '18px', opacity: 0.6 }}>🌻</span>
+                  <span style={{ opacity: 0.5 }}><StageIcon status={STATUS.BLOOMED} size={20} /></span>
                 </div>
               );
             })()}
@@ -2391,7 +2449,7 @@ function App() {
               <option value="">All Status</option>
               <option value={STATUS.SEED}>Seed</option>
               <option value={STATUS.SPROUTING}>Sprouting</option>
-              <option value={STATUS.BUDDING}>Budding</option>
+              <option value={STATUS.BUDDING}>Flourishing</option>
               <option value={STATUS.BLOOMED}>Bloomed</option>
             </select>
             <select value={filterOwner} onChange={(e) => setFilterOwner(e.target.value)} style={{
@@ -3896,10 +3954,10 @@ function App() {
       }}>
         {[
           { id: 'present', label: 'Present', icon: '✿' },
-          { id: 'garden', label: 'Garden', icon: '🌳' },
-          { id: 'timeline', label: 'Timeline', icon: '📅' },
-          { id: 'bloom', label: 'Bloom', icon: '🌻' },
-          { id: 'settings', label: 'Settings', icon: '⚙️' }
+          { id: 'garden', label: 'Garden', icon: '❋' },
+          { id: 'timeline', label: 'Timeline', icon: '▦' },
+          { id: 'bloom', label: 'Bloom', icon: '✦' },
+          { id: 'settings', label: 'Settings', icon: '⚙' }
         ].map(t => {
           let badge = null;
           if (t.id === 'garden') {
