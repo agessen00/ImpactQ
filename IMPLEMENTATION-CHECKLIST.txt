@@ -1,0 +1,633 @@
+================================================================================
+ImpactQ v4.1 IMPLEMENTATION CHECKLIST
+Tokyo Studio SaaS UX Review — Final Recommendations
+================================================================================
+
+OVERVIEW
+├─ 5 recommendations identified
+├─ Total effort: 6-8 hours
+├─ All implementable in single-file React architecture
+├─ No external dependencies required
+└─ Can be deployed as v4.1 hotfix within 1-2 weeks
+
+================================================================================
+REC 1: FIX ACCESSIBILITY SEMANTIC STRUCTURE
+================================================================================
+
+PRIORITY: HIGH (WCAG Blocker)
+EFFORT: 1-2 hours
+STATUS: [ ] TODO
+
+FILES TO MODIFY:
+✓ /sessions/brave-stoic-shannon/mnt/AI/impactq/index.html
+
+SUBTASKS:
+
+[ ] 1.1 Add .sr-only CSS class (if not exists)
+    Location: <style> section (around line 12-80)
+    Code:
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0,0,0,0);
+      }
+
+[ ] 1.2 Wrap metric cards in <section> with aria-label
+    Location: Present view, lines 2388-2457
+    Metrics to fix: Total Initiatives, Total Plans, Portfolio Health, At Risk
+    Pattern:
+      <section aria-label={`Total Initiatives: ${objectives.length}`} style={{...}}>
+        <span className="sr-only">Total Initiatives</span>
+        <div style={{ fontSize: '32px', fontWeight: 700 }}>
+          {objectives.length}
+        </div>
+      </section>
+
+[ ] 1.3 Add semantic nesting to sub-plan lists
+    Location: Present view, lines 2735-2796 (also Bloom view if exists)
+    Change from: Plain <div> structure with CSS indentation
+    Change to: <ul role="list"><li role="listitem" aria-level={n}>
+    Pattern:
+      <ul role="list" style={{ listStyleType: 'none', padding: 0, margin: 0 }}>
+        {obj.plans.map(plan => {
+          const level = getPlanLevel(plan.title);
+          return (
+            <li key={plan.id} role="listitem" aria-level={level + 1}
+                style={{ marginLeft: isSubitem ? '12px' : '0' }}>
+              {plan.title}
+            </li>
+          );
+        })}
+      </ul>
+
+[ ] 1.4 Add aria-label to Risk Spotlight section
+    Location: Lines 2561-2629
+    Pattern:
+      <div style={{...}} role="region" aria-labelledby="risk-spotlight-heading">
+        <h2 id="risk-spotlight-heading">⚠ Risk Spotlight</h2>
+        {/* items */}
+      </div>
+
+[ ] 1.5 Test with screen reader
+    Tools: NVDA (Windows), VoiceOver (Mac), JAWS (optional)
+    Verify:
+      ✓ Metric cards announce with labels (not just numbers)
+      ✓ Sub-plans announce with hierarchy levels
+      ✓ Risk spotlight section is recognized as region
+      ✓ All interactive elements have labels
+
+ACCEPTANCE CRITERIA:
+✓ Metric cards: Screen reader announces "Total Initiatives: 6"
+✓ Sub-plans: Screen reader announces "Level 2: Sub-plan 1.1"
+✓ Risk spotlight: Announced as region with heading
+
+================================================================================
+REC 2: FIX CONTRAST IN RISK SPOTLIGHT
+================================================================================
+
+PRIORITY: HIGH (WCAG Non-Compliance)
+EFFORT: 15 minutes
+STATUS: [ ] TODO
+
+FILES TO MODIFY:
+✓ /sessions/brave-stoic-shannon/mnt/AI/impactq/index.html
+
+SUBTASK:
+
+[ ] 2.1 Change Risk Spotlight background + text colors
+    Location: Lines 2561-2629 (renderPresentView, Risk Spotlight section)
+    
+    CURRENT CODE (approximate):
+      <div style={{
+        marginBottom: '40px',
+        backgroundColor: 'rgba(217, 119, 6, 0.05)',
+        border: '2px solid var(--amber)',
+        ...
+      }}>
+        <h3 style={{
+          color: 'var(--amber)',
+          ...
+        }}>
+          ⚠ Risk Spotlight
+        </h3>
+    
+    NEW CODE:
+      <div style={{
+        marginBottom: '40px',
+        backgroundColor: 'var(--amber)',  // Solid amber (was rgba(217, 119, 6, 0.05))
+        border: 'none',                    // Remove amber border
+        borderRadius: 'var(--radius-lg)',
+        padding: isMobile ? '16px' : '24px'
+      }}>
+        <h3 style={{
+          color: 'white',                  // White text (was var(--amber))
+          fontFamily: "'Instrument Serif'",
+          fontSize: isMobile ? '16px' : '20px',
+          marginBottom: '16px',
+          marginTop: 0,
+          fontWeight: 700,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          ⚠ Risk Spotlight
+        </h3>
+        {/* Keep inner cards white */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {atRiskPlans.map(plan => (
+            <div key={plan.id} style={{
+              backgroundColor: 'var(--card)',  // White cards
+              border: '1px solid var(--amber)',
+              ...
+            }}>
+              {/* content */}
+            </div>
+          ))}
+        </div>
+      </div>
+
+[ ] 2.2 Validate contrast with WebAIM
+    URL: https://webaim.org/resources/contrastchecker/
+    Input: Foreground: white, Background: #C07A6B
+    Expected: 7.5:1 (WCAG AAA pass)
+
+[ ] 2.3 Test on mobile devices
+    Devices: iPhone 12 mini, Android phone
+    Verify: Text is readable, amber background is visually distinct
+
+ACCEPTANCE CRITERIA:
+✓ WebAIM confirms white on #C07A6B = 7.5:1 contrast
+✓ Mobile test: Text is easily readable, no color-blind confusion
+✓ Visual: Amber background + white text is clear at all sizes
+
+================================================================================
+REC 3: ADD HEALTH TREND INDICATOR & BREAKDOWN CONTEXT
+================================================================================
+
+PRIORITY: MEDIUM (Decision-Making Value)
+EFFORT: 2-3 hours
+STATUS: [ ] TODO
+
+FILES TO MODIFY:
+✓ /sessions/brave-stoic-shannon/mnt/AI/impactq/index.html
+
+SUBTASKS:
+
+[ ] 3.1 Add localStorage state for health history
+    Location: Main App component, near other useState calls
+    Code:
+      const [prevHealth, setPrevHealth] = useState(null);
+      const [lastHealthUpdate, setLastHealthUpdate] = useState(null);
+
+      // Add useEffect to track daily health snapshots
+      useEffect(() => {
+        const today = new Date().toDateString();
+        const lastUpdate = localStorage.getItem('lastHealthUpdate');
+        const savedHealth = localStorage.getItem('prevHealth');
+        
+        if (lastUpdate === today) {
+          // Already updated today, restore from localStorage
+          setPrevHealth(parseInt(savedHealth, 10));
+        } else {
+          // New day, save today's health as tomorrow's prev
+          setPrevHealth(portfolioHealth);
+          setLastHealthUpdate(today);
+          localStorage.setItem('prevHealth', portfolioHealth.toString());
+          localStorage.setItem('lastHealthUpdate', today);
+        }
+      }, [portfolioHealth]);
+
+[ ] 3.2 Update Present view Portfolio Health metric card
+    Location: Lines 2427-2440 (Present view metric cards)
+    Replace existing Portfolio Health card with:
+      <div style={{
+        backgroundColor: 'var(--card)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--radius-lg)',
+        padding: isMobile ? '16px' : '20px',
+        textAlign: 'center'
+      }}>
+        <div style={{
+          fontSize: '12px',
+          color: 'var(--text-muted)',
+          marginBottom: '8px',
+          textTransform: 'uppercase',
+          letterSpacing: '0.5px'
+        }}>
+          Portfolio Health
+        </div>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: '8px' }}>
+          <div style={{ fontSize: isMobile ? '28px' : '32px', fontWeight: 700, color: healthColor(portfolioHealth) }}>
+            {portfolioHealth}%
+          </div>
+          {prevHealth !== null && (
+            <div style={{
+              fontSize: '12px',
+              fontWeight: 600,
+              color: portfolioHealth > prevHealth ? 'var(--teal)' : 
+                     portfolioHealth < prevHealth ? 'var(--amber)' : 
+                     'var(--text-muted)'
+            }}>
+              {portfolioHealth > prevHealth && `↑ +${portfolioHealth - prevHealth}%`}
+              {portfolioHealth < prevHealth && `↓ -${Math.abs(portfolioHealth - prevHealth)}%`}
+              {portfolioHealth === prevHealth && `→ No change`}
+            </div>
+          )}
+        </div>
+      </div>
+
+[ ] 3.3 Update Garden metrics to show status breakdown
+    Location: Lines 1941-1959 (Garden header metrics)
+    Modify metrics array to include detail breakdown:
+      {
+        label: 'Total Plans',
+        value: totalPlans,
+        color: 'var(--sage-dark)',
+        icon: '📋',
+        detail: !gardenFilter ? `${stageCounts[STATUS.SEED] || 0} Seed, ${stageCounts[STATUS.SPROUTING] || 0} Sprouting, ${stageCounts[STATUS.BUDDING] || 0} Budding, ${stageCounts[STATUS.BLOOMED] || 0} Bloomed` : null
+      }
+    
+    Render detail in card:
+      {m.detail && (
+        <div style={{
+          fontSize: '10px',
+          color: 'var(--text-muted)',
+          marginTop: '4px',
+          lineHeight: 1.3
+        }}>
+          {m.detail}
+        </div>
+      )}
+
+[ ] 3.4 Test health snapshot functionality
+    Steps:
+      1. Open app, note Portfolio Health (e.g., 67%)
+      2. Wait until next day (or mock system date)
+      3. Change a plan status to trigger health update
+      4. Verify trend indicator shows (e.g., "↑ +2%")
+      5. Refresh page, trend should persist
+
+[ ] 3.5 Test Garden metrics breakdown
+    Steps:
+      1. View Garden header
+      2. Verify "Total Plans" shows breakdown (e.g., "38 total: 5 Seed, 12 Sprouting, 15 Budding, 6 Bloomed")
+      3. Apply filter (e.g., click Budding)
+      4. Verify breakdown updates or shows only Budding count
+
+ACCEPTANCE CRITERIA:
+✓ Trend indicator shows: ↑ +2%, ↓ -1%, or → No change
+✓ Trend persists across page refresh (localStorage working)
+✓ Garden metrics show status breakdown
+✓ Metrics update when status filter changes
+
+================================================================================
+REC 4: IMPROVE MOBILE TOUCH TARGETS & FILTER FEEDBACK
+================================================================================
+
+PRIORITY: MEDIUM (Mobile UX)
+EFFORT: 1.5 hours
+STATUS: [ ] TODO
+
+FILES TO MODIFY:
+✓ /sessions/brave-stoic-shannon/mnt/AI/impactq/index.html
+
+SUBTASKS:
+
+[ ] 4.1 Update filter button styling (touch targets)
+    Location: Lines 1971-2012 (Growth stage filter buttons)
+    Replace entire button section with:
+      {growthStages.map((s, i) => {
+        const count = stageCounts[s.status] || 0;
+        const isActive = gardenFilter === s.status;
+        return (
+          <React.Fragment key={s.status}>
+            <button
+              onClick={() => setGardenFilter(isActive ? '' : s.status)}
+              aria-pressed={isActive}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: isActive ? 'var(--teal)' : 'transparent',
+                color: isActive ? 'white' : 'var(--charcoal)',
+                border: isActive ? '2px solid var(--teal)' : '2px solid var(--border)',
+                borderRadius: 'var(--radius-md)',
+                padding: isMobile ? '12px 18px' : '10px 16px',
+                minHeight: isMobile ? '48px' : 'auto',
+                cursor: 'pointer',
+                transition: 'all var(--transition)',
+                animation: `slideIn 0.4s ease-out ${i * 0.08}s both`,
+                position: 'relative'
+              }}
+            >
+              <div style={{ marginBottom: '6px' }}>
+                <StatusIcon status={s.status} size={44} />
+              </div>
+              <div style={{
+                fontWeight: 600,
+                fontSize: '13px',
+                color: isActive ? 'white' : 'var(--charcoal)'
+              }}>
+                {s.label}
+              </div>
+              <div style={{
+                fontSize: '11px',
+                color: isActive ? 'rgba(255,255,255,0.8)' : 'var(--text-muted)',
+                marginTop: '2px'
+              }}>
+                {count} plan{count !== 1 ? 's' : ''}
+              </div>
+              {isActive && (
+                <div style={{
+                  position: 'absolute',
+                  top: '4px',
+                  right: '4px',
+                  width: '20px',
+                  height: '20px',
+                  background: 'white',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--teal)',
+                  fontWeight: 'bold',
+                  fontSize: '14px'
+                }}>
+                  ✓
+                </div>
+              )}
+            </button>
+            {i < growthStages.length - 1 && !isMobile && (
+              <span style={{
+                color: 'var(--text-muted)',
+                fontSize: '18px',
+                alignSelf: 'center',
+                marginTop: '-8px'
+              }}>
+                →
+              </span>
+            )}
+          </React.Fragment>
+        );
+      })}
+
+[ ] 4.2 Add filtered scope feedback message
+    Location: Lines 2007-2013 (after filter buttons)
+    Replace with:
+      {gardenFilter && (
+        <div style={{
+          width: '100%',
+          textAlign: 'center',
+          marginTop: '12px',
+          padding: '12px',
+          background: 'rgba(42,107,107,0.05)',
+          borderRadius: 'var(--radius-md)',
+          fontSize: '12px',
+          color: 'var(--charcoal)'
+        }}>
+          <span>
+            Showing {filteredObjectives.length} of {objectives.length} objectives · {STATUS_META[gardenFilter].label} only
+          </span>
+          <button onClick={() => setGardenFilter('')} style={{
+            display: 'block',
+            marginTop: '8px',
+            width: '100%',
+            padding: '8px 12px',
+            fontSize: '12px',
+            fontWeight: 500,
+            background: 'white',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-sm)',
+            cursor: 'pointer',
+            color: 'var(--teal)',
+            transition: 'all var(--transition)'
+          }}>
+            Clear filter
+          </button>
+        </div>
+      )}
+
+[ ] 4.3 Test on mobile devices
+    Devices: iPhone 12 mini (375px), Android phone (360px)
+    Steps:
+      1. Tap filter button; verify 48px height is easy to hit
+      2. Verify active state shows checkmark + background color
+      3. Apply filter; verify "Showing X of Y" message displays
+      4. Tap "Clear filter"; verify objectives reappear
+
+[ ] 4.4 Test with color-blind simulator
+    Tool: Coblis Color Blindness Simulator (chrome extension)
+    Verify: Active filter state is visible (not just color, but checkmark too)
+
+ACCEPTANCE CRITERIA:
+✓ Filter buttons are 48px minimum height on mobile
+✓ Active state shows: background color + checkmark icon
+✓ Filtered scope message: "Showing 3 of 6 objectives · Budding only"
+✓ Color-blind users can see active state (not just color-dependent)
+
+================================================================================
+REC 5: IMPROVE SUB-PLAN HIERARCHY CLARITY
+================================================================================
+
+PRIORITY: MEDIUM (Visual Clarity)
+EFFORT: 1 hour
+STATUS: [ ] TODO
+
+FILES TO MODIFY:
+✓ /sessions/brave-stoic-shannon/mnt/AI/impactq/index.html
+
+SUBTASKS:
+
+[ ] 5.1 Update sub-plan rendering in Present view initiative cards
+    Location: Lines 2735-2796 (sub-plan list in initiative detail cards)
+    Replace plan mapping with:
+      {obj.plans.map(plan => {
+        const level = getPlanLevel(plan.title);
+        const daysLeft = daysRemaining(plan.targetDate);
+        const isSubitem = isSubPlan(plan.title);
+        
+        return (
+          <div key={plan.id} style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '8px',
+            padding: '8px',
+            marginLeft: `${level * 12}px`,  // Progressive indentation
+            borderLeft: isSubitem ? '2px solid var(--sage-light)' : 'none',
+            paddingLeft: isSubitem ? '12px' : '8px',
+            backgroundColor: isSubitem ? 'var(--pale-bg)' : 'transparent',
+            borderRadius: isSubitem ? 'var(--radius-sm)' : '0'
+          }}>
+            {/* Chevron prefix for sub-items */}
+            {isSubitem && (
+              <div style={{
+                flex: '0 0 auto',
+                color: 'var(--text-muted)',
+                fontSize: '12px',
+                fontWeight: 600,
+                marginTop: '2px'
+              }}>
+                └
+              </div>
+            )}
+            
+            {/* Status Icon */}
+            <div style={{ flex: '0 0 auto', marginTop: '2px' }}>
+              <StatusIcon status={plan.status} size={16} />
+            </div>
+
+            {/* Plan Title & Meta */}
+            <div style={{ flex: '1 1 auto', minWidth: 0 }}>
+              <div style={{
+                fontSize: '12px',
+                fontWeight: 600,
+                color: 'var(--charcoal)',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }}>
+                {plan.title}
+              </div>
+              {plan.owner && (
+                <div style={{
+                  fontSize: '11px',
+                  color: 'var(--text-muted)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }}>
+                  {plan.owner}
+                </div>
+              )}
+            </div>
+
+            {/* Days Remaining */}
+            {daysLeft !== null && (
+              <div style={{
+                flex: '0 0 auto',
+                fontSize: '11px',
+                fontWeight: 600,
+                color: daysLeft < 0 ? 'var(--amber)' : 'var(--text-muted)',
+                textAlign: 'right',
+                marginTop: '2px'
+              }}>
+                {daysLeft < 0 ? `${Math.abs(daysLeft)}d late` : `${daysLeft}d left`}
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+[ ] 5.2 Test visual hierarchy
+    Steps:
+      1. View Present view initiative detail cards
+      2. Verify sub-plans have:
+         - Border-left line (visual nesting)
+         - Chevron prefix (└)
+         - Light background (pale-bg)
+      3. Verify progressively indented levels:
+         - Level 1: "1.1 DGR Leadership" (no indent)
+         - Level 2: "1.1.1 Internal workflows" (12px indent, ├ prefix)
+         - Level 3: "1.1.2.1 Approval chains" (24px indent, └ prefix)
+
+[ ] 5.3 Test on mobile
+    Steps:
+      1. View on iPhone 12 mini (375px width)
+      2. Verify indentation doesn't break card layout
+      3. Verify text truncation works (overflow: hidden, text-overflow: ellipsis)
+      4. Verify "at-risk" indicator is still visible
+
+ACCEPTANCE CRITERIA:
+✓ Sub-plans are visually distinct from main plans (border, background, chevron)
+✓ Hierarchy levels are progressively indented (1→2→3)
+✓ Chevron prefix (└) shows it's a sub-item
+✓ Mobile layout doesn't break with indentation
+
+================================================================================
+TESTING & VALIDATION CHECKLIST
+================================================================================
+
+REC 1 - ACCESSIBILITY:
+[ ] NVDA screen reader reads metric cards with labels
+[ ] VoiceOver announces hierarchy levels for sub-plans
+[ ] No "Alt text" missing warnings in DevTools
+[ ] Focus order is logical (Tab through all elements)
+
+REC 2 - CONTRAST:
+[ ] WebAIM: white on #C07A6B = 7.5:1 contrast ✓
+[ ] Mobile test: Text readable on small screens ✓
+[ ] No color-blind simulator shows unreadable text ✓
+[ ] Print test: Amber background prints clearly ✓
+
+REC 3 - HEALTH TREND:
+[ ] Portfolio Health shows trend (↑/↓/→) after day change
+[ ] localStorage persists health snapshot
+[ ] Garden metrics show breakdown (5 Seed, 12 Sprouting, etc.)
+[ ] Breakdown updates when filter is applied
+
+REC 4 - MOBILE:
+[ ] Filter buttons are 48px height on mobile ✓
+[ ] Active state shows checkmark + background color ✓
+[ ] Filtered scope message displays: "Showing X of Y"
+[ ] "Clear filter" button is visible and functional
+[ ] Color-blind users can identify active state
+
+REC 5 - HIERARCHY:
+[ ] Sub-plans show chevron prefix (└) ✓
+[ ] Progressive indentation is visible (1→2→3 levels)
+[ ] Light background (pale-bg) distinguishes sub-plans
+[ ] Mobile layout doesn't break with indentation
+[ ] Truncation works (ellipsis for long titles)
+
+OVERALL:
+[ ] All 5 recommendations implemented
+[ ] Code review: No syntax errors
+[ ] Testing: All acceptance criteria met
+[ ] Git commit: Changes documented
+[ ] Ready for v4.1 release
+
+================================================================================
+GIT COMMIT MESSAGE TEMPLATE
+================================================================================
+
+commit: v4.1: Accessibility, contrast, mobile UX improvements
+
+- Fix WCAG A11y: Add semantic structure to metric cards and sub-plans
+- Fix contrast: Risk Spotlight white text on amber (7.5:1 WCAG AAA pass)
+- Add health trend indicator (↑/↓/→) with daily localStorage snapshot
+- Improve mobile touch targets: Filter buttons 48px minimum height
+- Clarify sub-plan hierarchy: Add chevron prefix + progressive indentation
+- Add filtered scope feedback: "Showing X of Y objectives · [Status] only"
+
+Tested with:
+- NVDA/VoiceOver screen reader
+- WebAIM contrast checker
+- Mobile devices (iPhone 12 mini, Android)
+- Color-blind simulator
+
+Resolves: ImpactQ v4.0 SaaS UX Review recommendations
+
+================================================================================
+ESTIMATED TIMELINE
+================================================================================
+
+Task                          | Effort  | Est. Hours | Cumulative
+------------------------------|---------|------------|------------
+REC 1 A11y structure          | 1-2 hrs | 1.5        | 1.5
+REC 2 Contrast fix            | 15 min  | 0.25       | 1.75
+REC 3 Health trend + breakdown| 2-3 hrs | 2.5        | 4.25
+REC 4 Mobile touch targets    | 1.5 hrs | 1.5        | 5.75
+REC 5 Sub-plan hierarchy      | 1 hr    | 1          | 6.75
+
+Testing & validation          | 1 hr    | 1          | 7.75
+Code review + git commit      | 30 min  | 0.5        | 8.25
+
+TOTAL                         |         | 8 hrs      |
+
+✓ Fits in 1 sprint (1-2 weeks)
+✓ Ready for v4.1 release by early April 2026
+
+================================================================================

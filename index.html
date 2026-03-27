@@ -6,8 +6,8 @@
   <title>ImpactQ — Strategic Impact Visualization</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'><circle cx='24' cy='24' r='20' fill='%232A6B6B'/><text x='24' y='30' text-anchor='middle' font-size='20' fill='white' font-family='serif'>Q</text></svg>">
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -107,8 +107,8 @@ const STATUS = {
 const STATUS_META = {
   [STATUS.SEED]: { label: 'Seed', icon: '●', color: '#2A6B6B', bg: 'rgba(42,107,107,0.07)', progress: 0, emoji: '🌱' },
   [STATUS.SPROUTING]: { label: 'Sprouting', icon: '◐', color: '#6B7F70', bg: 'rgba(107,127,112,0.07)', progress: 25, emoji: '🌿' },
-  [STATUS.BUDDING]: { label: 'Budding', icon: '◑', color: '#8A9B8E', bg: 'rgba(138,155,142,0.07)', progress: 50, emoji: '🌱' },
-  [STATUS.BLOOMED]: { label: 'Bloomed', icon: '✦', color: '#D4A574', bg: 'rgba(212,165,116,0.1)', progress: 85, emoji: '🌸' }
+  [STATUS.BUDDING]: { label: 'Budding', icon: '◑', color: '#A89B6B', bg: 'rgba(168,155,107,0.07)', progress: 50, emoji: '🌼' },
+  [STATUS.BLOOMED]: { label: 'Bloomed', icon: '✦', color: '#F5D876', bg: 'rgba(245,216,118,0.1)', progress: 85, emoji: '🌻' }
 };
 
 const TRACTION_LEVELS = {
@@ -993,8 +993,8 @@ function EditPlanModal({ isOpen, onClose, plan, onSave }) {
       >
         <option value={STATUS.SEED}>🌱 Seed</option>
         <option value={STATUS.SPROUTING}>🌿 Sprouting</option>
-        <option value={STATUS.BUDDING}>🌱 Budding</option>
-        <option value={STATUS.BLOOMED}>🌸 Bloomed</option>
+        <option value={STATUS.BUDDING}>🌼 Budding</option>
+        <option value={STATUS.BLOOMED}>🌻 Bloomed</option>
       </select>
       <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Progress: {progress}%</label>
       <input
@@ -1814,6 +1814,7 @@ function App() {
   const [sortBy, setSortBy] = useState('status');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterOwner, setFilterOwner] = useState('');
+  const [gardenFilter, setGardenFilter] = useState('');
   const [tlMonth, setTlMonth] = useState(() => { const d = new Date(); return { year: d.getFullYear(), month: d.getMonth() }; });
   const [hoveredPlan, setHoveredPlan] = useState(null);
   const [todayMarker, setTodayMarker] = useState(true);
@@ -1887,6 +1888,17 @@ function App() {
       { status: STATUS.BLOOMED, label: 'Bloomed', desc: 'Complete' },
     ];
 
+    const allPlansFlat = objectives.flatMap(o => o.plans);
+    const totalPlans = allPlansFlat.length;
+    const atRiskCount = allPlansFlat.filter(p => p.atRisk).length;
+    const avgHealth = objectives.length > 0 ? Math.round(objectives.reduce((s, o) => s + calcHealth(o.plans), 0) / objectives.length) : 0;
+    const stageCounts = {};
+    allPlansFlat.forEach(p => { stageCounts[p.status] = (stageCounts[p.status] || 0) + 1; });
+
+    const filteredObjectives = gardenFilter
+      ? objectives.filter(o => o.plans.some(p => p.status === gardenFilter))
+      : objectives;
+
     return (
       <div style={{ position: 'relative', zIndex: 1 }}>
         <div style={{ paddingBottom: isMobile ? 'var(--mobile-nav)' : '40px' }}>
@@ -1900,7 +1912,7 @@ function App() {
               marginBottom: '28px',
               animation: 'fadeIn 0.6s ease-out'
             }}>
-              <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+              <div style={{ textAlign: 'center', marginBottom: '20px' }}>
                 <h1 style={{
                   fontFamily: "'Instrument Serif'",
                   fontSize: '36px',
@@ -1919,38 +1931,85 @@ function App() {
                 </p>
               </div>
 
-              {/* Growth Stages Row */}
+              {/* Metrics Cards Row */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
+                gap: '12px',
+                marginBottom: '24px'
+              }}>
+                {[
+                  { label: 'Initiatives', value: objectives.length, color: 'var(--teal)', icon: '🌿' },
+                  { label: 'Total Plans', value: totalPlans, color: 'var(--sage-dark)', icon: '📋' },
+                  { label: 'Portfolio Health', value: avgHealth + '%', color: healthColor(avgHealth), icon: '💚' },
+                  { label: 'At Risk', value: atRiskCount, color: atRiskCount > 0 ? 'var(--amber)' : 'var(--sage)', icon: '⚠️' }
+                ].map((m, i) => (
+                  <div key={i} style={{
+                    backgroundColor: 'var(--card)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '16px',
+                    textAlign: 'center',
+                    border: '1px solid var(--border)',
+                    animation: `fadeIn 0.4s ease-out ${i * 0.06}s both`
+                  }}>
+                    <div style={{ fontSize: '20px', marginBottom: '4px' }}>{m.icon}</div>
+                    <div style={{ fontSize: '24px', fontWeight: 700, color: m.color, lineHeight: 1.2 }}>{m.value}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500, marginTop: '4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{m.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Interactive Growth Stages Row */}
               <div style={{
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'flex-start',
-                gap: isMobile ? '12px' : '40px',
+                gap: isMobile ? '8px' : '32px',
                 flexWrap: 'wrap',
                 marginBottom: '24px'
               }}>
-                {growthStages.map((s, i) => (
-                  <React.Fragment key={s.status}>
-                    <div style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      animation: `slideIn 0.4s ease-out ${i * 0.08}s both`
-                    }}>
-                      <div style={{ marginBottom: '8px' }}>
-                        <StatusIcon status={s.status} size={48} />
-                      </div>
-                      <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--charcoal)' }}>
-                        {s.label}
-                      </div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                        {s.desc}
-                      </div>
-                    </div>
-                    {i < growthStages.length - 1 && !isMobile && (
-                      <span style={{ color: 'var(--text-muted)', fontSize: '18px', alignSelf: 'center', marginTop: '-8px' }}>→</span>
-                    )}
-                  </React.Fragment>
-                ))}
+                {growthStages.map((s, i) => {
+                  const count = stageCounts[s.status] || 0;
+                  const isActive = gardenFilter === s.status;
+                  return (
+                    <React.Fragment key={s.status}>
+                      <button
+                        onClick={() => setGardenFilter(isActive ? '' : s.status)}
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          background: isActive ? 'rgba(42,107,107,0.08)' : 'none',
+                          border: isActive ? '2px solid var(--teal)' : '2px solid transparent',
+                          borderRadius: 'var(--radius-md)',
+                          padding: '10px 16px',
+                          cursor: 'pointer',
+                          transition: 'all var(--transition)',
+                          animation: `slideIn 0.4s ease-out ${i * 0.08}s both`
+                        }}
+                      >
+                        <div style={{ marginBottom: '6px' }}>
+                          <StatusIcon status={s.status} size={44} />
+                        </div>
+                        <div style={{ fontWeight: 600, fontSize: '13px', color: isActive ? 'var(--teal)' : 'var(--charcoal)' }}>
+                          {s.label}
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                          {count} plan{count !== 1 ? 's' : ''}
+                        </div>
+                      </button>
+                      {i < growthStages.length - 1 && !isMobile && (
+                        <span style={{ color: 'var(--text-muted)', fontSize: '18px', alignSelf: 'center', marginTop: '-8px' }}>→</span>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+                {gardenFilter && (
+                  <button onClick={() => setGardenFilter('')} style={{
+                    alignSelf: 'center', background: 'none', border: 'none', color: 'var(--teal)',
+                    fontSize: '12px', cursor: 'pointer', fontWeight: 500, textDecoration: 'underline'
+                  }}>Clear filter</button>
+                )}
               </div>
 
               {/* Daily Wisdom Quote — between bloom icons and action buttons */}
@@ -2046,7 +2105,7 @@ function App() {
               gap: '16px',
               marginBottom: '32px'
             }}>
-              {objectives.map(obj => (
+              {filteredObjectives.map(obj => (
                 <ObjectiveCard
                   key={obj.id}
                   objective={obj}
@@ -2062,6 +2121,14 @@ function App() {
                   }}
                 />
               ))}
+              {gardenFilter && filteredObjectives.length === 0 && (
+                <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                  <p style={{ fontSize: '15px', marginBottom: '8px' }}>No initiatives match this filter.</p>
+                  <button onClick={() => setGardenFilter('')} style={{
+                    background: 'none', border: 'none', color: 'var(--teal)', cursor: 'pointer', fontWeight: 500, fontSize: '14px'
+                  }}>Show all initiatives</button>
+                </div>
+              )}
             </div>
 
           </div>
@@ -2265,65 +2332,485 @@ function App() {
   // RENDER PRESENT VIEW
   // ============================================================
   function renderPresentView() {
-    return (
-      <div style={{ position: 'relative', zIndex: 1, paddingBottom: isMobile ? 'var(--mobile-nav)' : '40px' }}>
-        <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '20px' }}>
-          <h1 style={{
-            fontFamily: "'Instrument Serif'",
-            fontSize: '28px',
-            marginBottom: '24px',
-            color: 'var(--charcoal)',
-            textAlign: 'center'
-          }}>
-            Strategic Overview
-          </h1>
+    // Prepare data for presentation
+    const allPlans = [];
+    objectives.forEach(obj => {
+      obj.plans.forEach(plan => {
+        allPlans.push({ ...plan, objectiveId: obj.id, objectiveTitle: obj.title, objectiveDescription: obj.description });
+      });
+    });
 
+    const portfolioHealth = objectives.length > 0
+      ? Math.round(objectives.reduce((sum, obj) => sum + calcHealth(obj.plans), 0) / objectives.length)
+      : 0;
+
+    const totalPlanCount = allPlans.length;
+    const atRiskPlans = allPlans.filter(p => p.atRisk === true);
+
+    // Format date
+    const today = new Date();
+    const dateStr = today.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+    // Helper: check if title is a sub-plan (e.g., "1.1", "1.2.3")
+    const isSubPlan = (title) => /^\d+\.\d+/.test(title);
+    const getPlanLevel = (title) => {
+      const match = title.match(/^(\d+(?:\.\d+)*)/);
+      if (!match) return 0;
+      return match[1].split('.').length - 1;
+    };
+
+    return (
+      <div style={{ position: 'relative', zIndex: 1, paddingBottom: isMobile ? 'var(--mobile-nav)' : '40px', background: 'var(--surface)', minHeight: '100vh' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: isMobile ? '16px' : '40px 24px' }}>
+
+          {/* ===== HEADER ===== */}
+          <div style={{ marginBottom: '40px', paddingBottom: '24px', borderBottom: '2px solid var(--border)' }}>
+            <h1 style={{
+              fontFamily: "'Instrument Serif'",
+              fontSize: isMobile ? '24px' : '36px',
+              marginBottom: '8px',
+              color: 'var(--charcoal)',
+              fontWeight: 700
+            }}>
+              Strategic Portfolio Review
+            </h1>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: '12px' }}>
+              <p style={{ fontSize: '14px', color: 'var(--text-secondary)', margin: 0 }}>
+                Goodwill Industries of Northeast Texas
+              </p>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>
+                Generated {dateStr}
+              </p>
+            </div>
+          </div>
+
+          {/* ===== EXECUTIVE SUMMARY CARDS ===== */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))',
-            gap: '20px',
+            gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)',
+            gap: isMobile ? '12px' : '16px',
             marginBottom: '40px'
           }}>
-            {objectives.map(obj => {
-              const health = calcHealth(obj.plans);
-              return (
-                <div key={obj.id} style={{
-                  backgroundColor: 'var(--card)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 'var(--radius-lg)',
-                  padding: '24px',
-                  textAlign: 'center',
-                  animation: 'fadeInUp 0.4s ease-out'
-                }}>
-                  <div style={{ marginBottom: '16px' }}>
-                    <StatusIcon status={obj.plans[0]?.status || STATUS.SEED} size={64} />
-                  </div>
-                  <h2 style={{
-                    fontFamily: "'Instrument Serif'",
-                    fontSize: '16px',
-                    marginBottom: '8px',
-                    color: 'var(--charcoal)'
+            {/* Total Initiatives */}
+            <div style={{
+              backgroundColor: 'var(--card)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-lg)',
+              padding: isMobile ? '16px' : '20px',
+              textAlign: 'center'
+            }}>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Total Initiatives
+              </div>
+              <div style={{ fontSize: isMobile ? '28px' : '32px', fontWeight: 700, color: 'var(--teal)' }}>
+                {objectives.length}
+              </div>
+            </div>
+
+            {/* Total Plans */}
+            <div style={{
+              backgroundColor: 'var(--card)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-lg)',
+              padding: isMobile ? '16px' : '20px',
+              textAlign: 'center'
+            }}>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Total Plans
+              </div>
+              <div style={{ fontSize: isMobile ? '28px' : '32px', fontWeight: 700, color: 'var(--sage)' }}>
+                {totalPlanCount}
+              </div>
+            </div>
+
+            {/* Portfolio Health */}
+            <div style={{
+              backgroundColor: 'var(--card)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-lg)',
+              padding: isMobile ? '16px' : '20px',
+              textAlign: 'center'
+            }}>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Portfolio Health
+              </div>
+              <div style={{ fontSize: isMobile ? '28px' : '32px', fontWeight: 700, color: healthColor(portfolioHealth) }}>
+                {portfolioHealth}%
+              </div>
+            </div>
+
+            {/* At Risk */}
+            <div style={{
+              backgroundColor: 'var(--card)',
+              border: `1px solid ${atRiskPlans.length > 0 ? 'var(--amber)' : 'var(--border)'}`,
+              borderRadius: 'var(--radius-lg)',
+              padding: isMobile ? '16px' : '20px',
+              textAlign: 'center'
+            }}>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                At Risk
+              </div>
+              <div style={{ fontSize: isMobile ? '28px' : '32px', fontWeight: 700, color: atRiskPlans.length > 0 ? 'var(--amber)' : 'var(--text-secondary)' }}>
+                {atRiskPlans.length}
+              </div>
+            </div>
+          </div>
+
+          {/* ===== PORTFOLIO HEALTH BY INITIATIVE (Horizontal Bars) ===== */}
+          <div style={{ marginBottom: '40px' }}>
+            <h2 style={{
+              fontFamily: "'Instrument Serif'",
+              fontSize: isMobile ? '18px' : '22px',
+              color: 'var(--charcoal)',
+              marginBottom: '20px',
+              fontWeight: 700
+            }}>
+              Initiative Health Overview
+            </h2>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {objectives.map(obj => {
+                const health = calcHealth(obj.plans);
+                const hasAtRisk = obj.plans.some(p => p.atRisk === true);
+                return (
+                  <div key={obj.id} style={{
+                    backgroundColor: 'var(--card)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '14px 16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '16px'
                   }}>
-                    {obj.title}
-                  </h2>
-                  <div style={{
-                    fontSize: '28px',
-                    fontWeight: 700,
-                    color: healthColor(health),
-                    marginBottom: '8px'
-                  }}>
-                    {health}%
+                    {/* Title */}
+                    <div style={{ flex: '0 0 auto', minWidth: isMobile ? '80px' : '150px' }}>
+                      <div style={{
+                        fontSize: isMobile ? '13px' : '14px',
+                        fontWeight: 600,
+                        color: 'var(--charcoal)',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {obj.title}
+                      </div>
+                    </div>
+
+                    {/* Health Bar */}
+                    <div style={{ flex: '1 1 auto', minWidth: '100px' }}>
+                      <div style={{
+                        width: '100%',
+                        height: '6px',
+                        backgroundColor: 'var(--pale-bg)',
+                        borderRadius: '3px',
+                        overflow: 'hidden'
+                      }}>
+                        <div style={{
+                          height: '100%',
+                          width: `${health}%`,
+                          backgroundColor: healthColor(health),
+                          borderRadius: '3px',
+                          transition: 'width 0.3s ease'
+                        }} />
+                      </div>
+                    </div>
+
+                    {/* Health % */}
+                    <div style={{
+                      flex: '0 0 auto',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      color: healthColor(health),
+                      minWidth: '35px',
+                      textAlign: 'right'
+                    }}>
+                      {health}%
+                    </div>
+
+                    {/* Plan Count Badge */}
+                    <div style={{
+                      flex: '0 0 auto',
+                      backgroundColor: 'var(--pale-bg)',
+                      borderRadius: 'var(--radius-full, 12px)',
+                      padding: '4px 8px',
+                      fontSize: '11px',
+                      color: 'var(--text-secondary)',
+                      fontWeight: 600
+                    }}>
+                      {obj.plans.length} plans
+                    </div>
+
+                    {/* At-Risk Indicator */}
+                    {hasAtRisk && (
+                      <div style={{
+                        flex: '0 0 auto',
+                        width: '8px',
+                        height: '8px',
+                        backgroundColor: 'var(--amber)',
+                        borderRadius: '50%',
+                        animation: 'pulse 2s ease-in-out infinite'
+                      }} />
+                    )}
                   </div>
-                  <div style={{
-                    fontSize: '12px',
-                    color: 'var(--text-muted)',
-                    marginBottom: '16px'
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ===== RISK SPOTLIGHT SECTION ===== */}
+          {atRiskPlans.length > 0 && (
+            <div style={{
+              marginBottom: '40px',
+              backgroundColor: 'rgba(217, 119, 6, 0.05)',
+              border: '2px solid var(--amber)',
+              borderRadius: 'var(--radius-lg)',
+              padding: isMobile ? '16px' : '24px'
+            }}>
+              <h3 style={{
+                fontFamily: "'Instrument Serif'",
+                fontSize: isMobile ? '16px' : '20px',
+                color: 'var(--amber)',
+                marginBottom: '16px',
+                marginTop: 0,
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                ⚠ Risk Spotlight
+              </h3>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {atRiskPlans
+                  .sort((a, b) => {
+                    const daysA = daysRemaining(a.targetDate);
+                    const daysB = daysRemaining(b.targetDate);
+                    return daysA - daysB;
+                  })
+                  .map(plan => {
+                    const days = daysRemaining(plan.targetDate);
+                    const obj = objectives.find(o => o.id === plan.objectiveId);
+                    return (
+                      <div key={plan.id} style={{
+                        backgroundColor: 'var(--card)',
+                        border: '1px solid var(--amber)',
+                        borderRadius: 'var(--radius-md)',
+                        padding: '12px 14px',
+                        fontSize: '13px'
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: '8px', marginBottom: '6px' }}>
+                          <div style={{ fontWeight: 600, color: 'var(--charcoal)' }}>
+                            {plan.title}
+                          </div>
+                          <div style={{
+                            flex: '0 0 auto',
+                            backgroundColor: 'var(--amber)',
+                            color: 'white',
+                            padding: '2px 6px',
+                            borderRadius: '3px',
+                            fontSize: '11px',
+                            fontWeight: 700
+                          }}>
+                            {days} days
+                          </div>
+                        </div>
+                        <div style={{ color: 'var(--text-secondary)', fontSize: '12px', marginBottom: '4px' }}>
+                          Initiative: {obj?.title}
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'auto 1fr', gap: isMobile ? '4px' : '12px', color: 'var(--text-muted)', fontSize: '12px' }}>
+                          {plan.owner && <span>Owner: {plan.owner}</span>}
+                          {plan.targetDate && <span>Due: {new Date(plan.targetDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+
+          {/* ===== INITIATIVE DETAIL CARDS ===== */}
+          <div style={{ marginBottom: '40px' }}>
+            <h2 style={{
+              fontFamily: "'Instrument Serif'",
+              fontSize: isMobile ? '18px' : '22px',
+              color: 'var(--charcoal)',
+              marginBottom: '20px',
+              fontWeight: 700
+            }}>
+              Initiative Details
+            </h2>
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(380px, 1fr))',
+              gap: '20px'
+            }}>
+              {objectives.map(obj => {
+                const health = calcHealth(obj.plans);
+                const onTrack = onTrackCount(obj.plans);
+                return (
+                  <div key={obj.id} style={{
+                    backgroundColor: 'var(--card)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-lg)',
+                    padding: isMobile ? '16px' : '20px',
+                    boxShadow: 'var(--shadow-sm)'
                   }}>
-                    {onTrackCount(obj.plans)} of {obj.plans.length} plans on track
+                    {/* Title & Health Ring */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '12px', gap: '12px' }}>
+                      <div>
+                        <h3 style={{
+                          fontFamily: "'Instrument Serif'",
+                          fontSize: isMobile ? '14px' : '16px',
+                          color: 'var(--charcoal)',
+                          margin: '0 0 4px',
+                          fontWeight: 700
+                        }}>
+                          {obj.title}
+                        </h3>
+                        {obj.description && (
+                          <p style={{
+                            fontSize: '12px',
+                            color: 'var(--text-muted)',
+                            margin: 0,
+                            lineHeight: 1.4
+                          }}>
+                            {obj.description}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Health Circle */}
+                      <div style={{
+                        flex: '0 0 auto',
+                        position: 'relative',
+                        width: '64px',
+                        height: '64px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <svg width="64" height="64" style={{ position: 'absolute' }}>
+                          <circle cx="32" cy="32" r="28" fill="none" stroke="var(--pale-bg)" strokeWidth="4" />
+                          <circle
+                            cx="32" cy="32" r="28"
+                            fill="none"
+                            stroke={healthColor(health)}
+                            strokeWidth="4"
+                            strokeDasharray={`${2 * Math.PI * 28}`}
+                            strokeDashoffset={`${2 * Math.PI * 28 * (1 - health / 100)}`}
+                            strokeLinecap="round"
+                            transform="rotate(-90 32 32)"
+                            style={{ transition: 'stroke-dashoffset 0.3s ease' }}
+                          />
+                        </svg>
+                        <div style={{
+                          position: 'relative',
+                          textAlign: 'center',
+                          zIndex: 1
+                        }}>
+                          <div style={{ fontSize: '18px', fontWeight: 700, color: healthColor(health) }}>
+                            {health}%
+                          </div>
+                          <div style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: 600 }}>
+                            {onTrack}/{obj.plans.length}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Plans List */}
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px',
+                      paddingTop: '12px',
+                      borderTop: '1px solid var(--pale-bg)'
+                    }}>
+                      {obj.plans.length === 0 ? (
+                        <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                          No plans yet
+                        </div>
+                      ) : (
+                        obj.plans.map(plan => {
+                          const level = getPlanLevel(plan.title);
+                          const daysLeft = daysRemaining(plan.targetDate);
+                          const isSubitem = isSubPlan(plan.title);
+                          return (
+                            <div key={plan.id} style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              padding: '8px',
+                              backgroundColor: isSubitem ? 'var(--pale-bg)' : 'transparent',
+                              borderRadius: isSubitem ? 'var(--radius-sm)' : '0',
+                              marginLeft: isSubitem ? '12px' : '0',
+                              borderLeft: isSubitem ? '2px solid var(--text-muted)' : 'none',
+                              paddingLeft: isSubitem ? '12px' : '8px'
+                            }}>
+                              {/* Status Icon */}
+                              <div style={{ flex: '0 0 auto' }}>
+                                <StatusIcon status={plan.status} size={16} />
+                              </div>
+
+                              {/* Plan Title & Meta */}
+                              <div style={{ flex: '1 1 auto', minWidth: 0 }}>
+                                <div style={{
+                                  fontSize: '12px',
+                                  fontWeight: 600,
+                                  color: 'var(--charcoal)',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap'
+                                }}>
+                                  {plan.title}
+                                </div>
+                                {plan.owner && (
+                                  <div style={{
+                                    fontSize: '11px',
+                                    color: 'var(--text-muted)',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap'
+                                  }}>
+                                    {plan.owner}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Days Remaining */}
+                              {daysLeft !== null && (
+                                <div style={{
+                                  flex: '0 0 auto',
+                                  fontSize: '11px',
+                                  fontWeight: 600,
+                                  color: daysLeft < 0 ? 'var(--amber)' : 'var(--text-muted)',
+                                  textAlign: 'right'
+                                }}>
+                                  {daysLeft < 0 ? `${Math.abs(daysLeft)}d late` : `${daysLeft}d left`}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ===== FOOTER ===== */}
+          <div style={{
+            marginTop: '40px',
+            paddingTop: '24px',
+            borderTop: '1px solid var(--border)',
+            textAlign: 'center',
+            fontSize: '12px',
+            color: 'var(--text-muted)'
+          }}>
+            Generated from ImpactQ — Strategic Portfolio Management
           </div>
 
         </div>
@@ -3013,9 +3500,9 @@ function App() {
       }}>
         {[
           { id: 'present', label: 'Present', icon: '✿' },
-          { id: 'garden', label: 'Garden', icon: '🌿' },
+          { id: 'garden', label: 'Garden', icon: '🌳' },
           { id: 'timeline', label: 'Timeline', icon: '📅' },
-          { id: 'bloom', label: 'Bloom', icon: '🌸' }
+          { id: 'bloom', label: 'Bloom', icon: '🌻' }
         ].map(t => (
           <button key={t.id} onClick={() => {
             setCurrentView(t.id);
