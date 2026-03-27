@@ -6,8 +6,8 @@
   <title>ImpactQ — Strategic Impact Visualization</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'><circle cx='24' cy='24' r='20' fill='%232A6B6B'/><text x='24' y='30' text-anchor='middle' font-size='20' fill='white' font-family='serif'>Q</text></svg>">
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -71,15 +71,23 @@
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
     }
-    #particle-canvas { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; }
     @media print {
-      #particle-canvas, nav, .mobile-nav, .fab, [data-no-print] { display:none !important; }
+      nav, .mobile-nav, .fab, [data-no-print] { display:none !important; }
       body { background:#fff !important; }
     }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+    .card-sm { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-md); }
+    .btn { border: none; cursor: pointer; font-weight: 500; transition: all var(--transition); font-size: 13px; }
+    .btn-teal { background: var(--teal); color: white; border-radius: var(--radius-md); padding: 10px 20px; }
+    .btn-outline { background: var(--card); color: var(--text-secondary); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 10px 20px; }
+    .flex-center { display: flex; align-items: center; justify-content: center; }
+    .flex-col { display: flex; flex-direction: column; }
+    .serif { font-family: 'Instrument Serif', Georgia, serif; }
+    .text-muted { color: var(--text-muted); }
+    .text-sm { font-size: 12px; }
   </style>
 </head>
 <body>
-<canvas id="particle-canvas" aria-hidden="true"></canvas>
 <div id="root"></div>
 <script>
 window.onerror = function(msg, url, line, col, err) {
@@ -351,44 +359,6 @@ function loadData() {
 function saveData(d) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); } catch (e) { } }
 
 // ============================================================
-// PARTICLES
-// ============================================================
-function initParticles() {
-  const c = document.getElementById('particle-canvas');
-  if (!c) return;
-  const ctx = c.getContext('2d');
-  let particles = [], af;
-  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  function resize() { c.width = window.innerWidth; c.height = window.innerHeight; }
-  resize(); window.addEventListener('resize', resize);
-  if (reduced) return;
-  const N = Math.min(35, Math.floor(window.innerWidth / 35));
-  const cols = ['138,155,142', '42,107,107', '212,165,116'];
-  for (let i = 0; i < N; i++) {
-    particles.push({
-      x: Math.random() * c.width, y: Math.random() * c.height,
-      r: 1.2 + Math.random() * 2, vx: (Math.random() - 0.5) * 0.25, vy: (Math.random() - 0.5) * 0.25,
-      col: cols[Math.floor(Math.random() * cols.length)], ph: Math.random() * Math.PI * 2, sp: 0.002 + Math.random() * 0.004,
-    });
-  }
-  function draw() {
-    ctx.clearRect(0, 0, c.width, c.height);
-    const t = Date.now() * 0.001;
-    particles.forEach(p => {
-      p.x += p.vx; p.y += p.vy;
-      if (p.x < -10) p.x = c.width + 10; if (p.x > c.width + 10) p.x = -10;
-      if (p.y < -10) p.y = c.height + 10; if (p.y > c.height + 10) p.y = -10;
-      const o = 0.12 + 0.12 * Math.sin(t * p.sp * 100 + p.ph);
-      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(${p.col},${o})`; ctx.fill();
-    });
-    af = requestAnimationFrame(draw);
-  }
-  draw();
-  return () => cancelAnimationFrame(af);
-}
-
-// ============================================================
 // BOTANICAL SVG ICONS
 // ============================================================
 function SeedIcon({ size = 48, color = '#2A6B6B' }) {
@@ -475,110 +445,6 @@ function StatusIcon({ status, size = 48 }) {
 }
 
 // ============================================================
-// STATUS PROGRESSION VISUALIZATION
-// ============================================================
-function StatusProgression() {
-  const [expanded, setExpanded] = useState(true);
-  const stages = [
-    { status: STATUS.SEED, label: 'Seed', desc: 'Not Started' },
-    { status: STATUS.SPROUTING, label: 'Sprouting', desc: 'Early Progress' },
-    { status: STATUS.BUDDING, label: 'Budding', desc: 'In Progress' },
-    { status: STATUS.BLOOMED, label: 'Bloomed', desc: 'Complete' },
-  ];
-
-  if (!expanded) {
-    return (
-      <button onClick={() => setExpanded(true)} style={{
-        padding: '12px 16px',
-        borderRadius: 'var(--radius-md)',
-        border: '1px solid var(--border)',
-        background: 'var(--card)',
-        cursor: 'pointer',
-        fontSize: '13px',
-        fontWeight: 500,
-        color: 'var(--text-secondary)',
-        transition: 'all var(--transition)',
-        margin: '20px 0'
-      }}>
-        + Show Status Progression
-      </button>
-    );
-  }
-
-  return (
-    <div style={{
-      padding: '40px 20px',
-      textAlign: 'center',
-      backgroundColor: 'rgba(42, 107, 107, 0.03)',
-      borderRadius: 'var(--radius-lg)',
-      margin: '40px 0',
-      animation: 'fadeIn 0.6s ease-out'
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <h2 style={{ fontFamily: "'Instrument Serif'", fontSize: '24px', marginBottom: 0, color: 'var(--charcoal)' }}>
-          Strategic Growth Stages
-        </h2>
-        <button onClick={() => setExpanded(false)} style={{
-          padding: '4px 8px',
-          border: 'none',
-          background: 'transparent',
-          cursor: 'pointer',
-          fontSize: '16px',
-          color: 'var(--text-muted)'
-        }}>−</button>
-      </div>
-      <p style={{ color: 'var(--text-muted)', marginBottom: '32px', fontSize: '14px' }}>
-        Every initiative follows this natural progression from seed to bloom
-      </p>
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-around',
-        alignItems: 'flex-start',
-        flexWrap: 'wrap',
-        gap: '16px',
-        maxWidth: '1000px',
-        margin: '0 auto'
-      }}>
-        {stages.map((s, i) => (
-          <div key={s.status} style={{
-            flex: '1 1 140px',
-            minWidth: '120px',
-            animation: `slideIn 0.4s ease-out ${i * 0.08}s both`
-          }}>
-            <div style={{
-              padding: '24px 12px',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '12px'
-            }}>
-              <StatusIcon status={s.status} size={60} />
-              <div>
-                <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--charcoal)' }}>
-                  {s.label}
-                </div>
-                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                  {s.desc}
-                </div>
-              </div>
-            </div>
-            {i < stages.length - 1 && (
-              <div style={{
-                textAlign: 'center',
-                color: 'var(--border)',
-                fontSize: '18px',
-                marginTop: '-8px'
-              }}>
-                →
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // ============================================================
 // MODAL with FOCUS TRAP
 // ============================================================
@@ -1046,35 +912,6 @@ function EditPlanModal({ isOpen, onClose, plan, onSave }) {
 }
 
 // ============================================================
-// TRACTION CASCADE HEADER
-// ============================================================
-function TractionCascade() {
-  return (
-    <div style={{
-      padding: '20px',
-      marginBottom: '24px',
-      backgroundColor: 'rgba(138, 155, 142, 0.08)',
-      borderRadius: 'var(--radius-lg)',
-      border: '1px solid rgba(138, 155, 142, 0.3)',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '16px',
-      fontSize: '13px',
-      color: 'var(--text-secondary)',
-      overflow: 'auto'
-    }}>
-      <span style={{ fontWeight: 600, color: 'var(--charcoal)' }}>V/TO Alignment:</span>
-      <span>Vision</span>
-      <span style={{ opacity: 0.5 }}>→</span>
-      <span>3-Year Picture</span>
-      <span style={{ opacity: 0.5 }}>→</span>
-      <span>Annual Plan</span>
-      <span style={{ opacity: 0.5 }}>→</span>
-      <span>Quarterly Rocks</span>
-    </div>
-  );
-}
-
 // ============================================================
 // OBJECTIVE CARD (GARDEN VIEW)
 // ============================================================
@@ -1377,199 +1214,69 @@ function PlanCard({ plan, objective, onEdit, onDelete, onStatusChange, onProgres
 // LOGIN COMPONENT
 // ============================================================
 function LoginPage({ onLogin }) {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-
-  const handleLogin = () => {
-    if (username.trim() && password.trim()) {
-      onLogin(username);
-    }
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && username.trim() && password.trim()) {
-      handleLogin();
-    }
-  };
-
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="login-title" style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: 'var(--surface)',
+    <div style={{
+      minHeight: '100vh',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      zIndex: 9999,
-      animation: 'fadeIn 0.6s ease-out'
+      backgroundColor: 'var(--surface)',
+      padding: '20px'
     }}>
-      <canvas id="particle-canvas-login" aria-hidden="true" style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        zIndex: -1,
-        pointerEvents: 'none'
-      }} />
-
       <div style={{
-        background: 'var(--card)',
-        padding: '60px 40px',
-        borderRadius: 'var(--radius-xl)',
-        boxShadow: 'var(--shadow-lg)',
-        maxWidth: '420px',
-        width: '90%',
         textAlign: 'center',
-        animation: 'scaleIn 0.5s cubic-bezier(0.25, 0.1, 0.25, 1.0)'
+        maxWidth: '400px',
+        animation: 'fadeIn 0.8s ease-out'
       }}>
-        <h1 id="login-title" style={{ display: 'none' }}>ImpactQ Login</h1>
-        <div style={{ marginBottom: '40px' }}>
-          <div style={{
-            fontFamily: "'Instrument Serif'",
-            fontSize: '32px',
-            fontWeight: 400,
-            color: 'var(--charcoal)',
-            marginBottom: '8px',
-            letterSpacing: '0.5px'
-          }}>
-            ImpactQ
-          </div>
-          <div style={{
-            fontSize: '12px',
-            fontWeight: 600,
-            color: 'var(--text-muted)',
-            letterSpacing: '1px',
-            textTransform: 'uppercase'
-          }}>
-            {APP_VERSION} · Strategic Impact
-          </div>
-        </div>
-
         <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          gap: '20px',
-          marginBottom: '40px',
-          padding: '20px 0'
+          width: '80px', height: '80px', borderRadius: '50%',
+          backgroundColor: 'var(--teal)', display: 'flex',
+          alignItems: 'center', justifyContent: 'center',
+          margin: '0 auto 24px', boxShadow: 'var(--shadow-lg)'
         }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-            <StatusIcon status={STATUS.SEED} size={48} />
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500 }}>Seed</div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', fontSize: '20px', color: 'var(--text-muted)' }}>→</div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-            <StatusIcon status={STATUS.SPROUTING} size={48} />
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500 }}>Sprouting</div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', fontSize: '20px', color: 'var(--text-muted)' }}>→</div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-            <StatusIcon status={STATUS.BUDDING} size={48} />
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500 }}>Budding</div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', fontSize: '20px', color: 'var(--text-muted)' }}>→</div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-            <StatusIcon status={STATUS.BLOOMED} size={48} />
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500 }}>Bloomed</div>
-          </div>
+          <span style={{ fontSize: '36px', color: 'white', fontFamily: "'Instrument Serif'" }}>Q</span>
         </div>
-
-        <div style={{ marginBottom: '16px' }}>
-          <label htmlFor="username-login" style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '6px', color: 'var(--text-muted)' }}>USERNAME</label>
-          <input
-            id="username-login"
-            type="text"
-            placeholder="Enter your username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            onKeyPress={handleKeyPress}
-            aria-label="Username"
-            aria-required="true"
-            style={{
-              width: '100%',
-              padding: '12px 16px',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-md)',
-              fontFamily: "'Inter'",
-              fontSize: '14px',
-              color: 'var(--charcoal)',
-              background: 'var(--surface)',
-              transition: 'all var(--transition)',
-              boxSizing: 'border-box'
-            }}
-            onFocus={(e) => { e.target.style.borderColor = 'var(--teal)'; e.target.style.boxShadow = '0 0 0 3px rgba(42, 107, 107, 0.1)'; }}
-            onBlur={(e) => { e.target.style.borderColor = 'var(--border)'; e.target.style.boxShadow = 'none'; }}
-          />
-        </div>
-
-        <div style={{ marginBottom: '24px' }}>
-          <label htmlFor="password-login" style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '6px', color: 'var(--text-muted)' }}>PASSWORD</label>
-          <input
-            id="password-login"
-            type="password"
-            placeholder="Enter your password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            onKeyPress={handleKeyPress}
-            aria-label="Password"
-            aria-required="true"
-            style={{
-              width: '100%',
-              padding: '12px 16px',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-md)',
-              fontFamily: "'Inter'",
-              fontSize: '14px',
-              color: 'var(--charcoal)',
-              background: 'var(--surface)',
-              transition: 'all var(--transition)',
-              boxSizing: 'border-box'
-            }}
-            onFocus={(e) => { e.target.style.borderColor = 'var(--teal)'; e.target.style.boxShadow = '0 0 0 3px rgba(42, 107, 107, 0.1)'; }}
-            onBlur={(e) => { e.target.style.borderColor = 'var(--border)'; e.target.style.boxShadow = 'none'; }}
-          />
-        </div>
-
-        <div style={{ marginBottom: '12px' }}>
-          <a href="#forgot-password" onClick={(e) => { e.preventDefault(); alert('Password reset functionality coming soon. Contact support@impactq.io'); }} style={{ fontSize: '12px', color: 'var(--teal)', textDecoration: 'none', fontWeight: 500 }} aria-label="Forgot password link">
-            Forgot password?
-          </a>
-        </div>
-
+        <h1 style={{
+          fontFamily: "'Instrument Serif'",
+          fontSize: '32px',
+          color: 'var(--charcoal)',
+          marginBottom: '8px'
+        }}>
+          ImpactQ
+        </h1>
+        <p style={{
+          fontSize: '14px',
+          color: 'var(--text-muted)',
+          marginBottom: '32px',
+          lineHeight: 1.5
+        }}>
+          Strategic Impact Visualization
+        </p>
         <button
-          onClick={handleLogin}
-          disabled={!username.trim() || !password.trim()}
+          onClick={() => onLogin(true)}
           style={{
-            width: '100%',
-            padding: '12px 24px',
-            background: (username.trim() && password.trim()) ? 'var(--teal)' : 'var(--border)',
-            color: (username.trim() && password.trim()) ? 'white' : 'var(--text-muted)',
-            border: 'none',
-            borderRadius: 'var(--radius-md)',
-            fontSize: '14px',
+            padding: '14px 48px',
+            fontSize: '15px',
             fontWeight: 600,
-            cursor: (username.trim() && password.trim()) ? 'pointer' : 'not-allowed',
+            border: 'none',
+            backgroundColor: 'var(--teal)',
+            color: 'white',
+            borderRadius: 'var(--radius-xl)',
+            cursor: 'pointer',
             transition: 'all var(--transition)',
-            letterSpacing: '0.5px'
-          }}
-          onMouseEnter={(e) => {
-            if (username.trim() && password.trim()) {
-              e.target.style.background = 'var(--teal-dark)';
-              e.target.style.transform = 'translateY(-2px)';
-              e.target.style.boxShadow = 'var(--shadow-md)';
-            }
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.background = 'var(--teal)';
-            e.target.style.transform = 'translateY(0)';
-            e.target.style.boxShadow = 'none';
+            boxShadow: 'var(--shadow-md)'
           }}
         >
-          SIGN IN
+          Enter Strategic Garden
         </button>
+        <p style={{
+          fontSize: '11px',
+          color: 'var(--text-muted)',
+          marginTop: '24px',
+          opacity: 0.6
+        }}>
+          Goodwill Industries of Northeast Texas
+        </p>
       </div>
     </div>
   );
@@ -1647,160 +1354,9 @@ function LoadingOverlay({ isLoading }) {
 
 
 // ============================================================
-// STRATEGIC GROWTH STAGES COMPONENT
-// ============================================================
-function StrategicGrowthStages() {
-  const [expanded, setExpanded] = useState(true);
-  
-  const stages = [
-    { status: STATUS.SEED, label: 'Seed', desc: 'Not Started' },
-    { status: STATUS.SPROUTING, label: 'Sprouting', desc: 'Early Progress' },
-    { status: STATUS.BUDDING, label: 'Budding', desc: 'In Progress' },
-    { status: STATUS.BLOOMED, label: 'Bloomed', desc: 'Complete' },
-  ];
-
-  if (!expanded) {
-    return (
-      <button onClick={() => setExpanded(true)} style={{
-        padding: '12px 16px',
-        borderRadius: 'var(--radius-md)',
-        border: '1px solid var(--border)',
-        background: 'var(--card)',
-        cursor: 'pointer',
-        fontSize: '13px',
-        fontWeight: 500,
-        color: 'var(--text-secondary)',
-        transition: 'all var(--transition)',
-        margin: '20px 0'
-      }}>
-        + Strategic Growth Stages
-      </button>
-    );
-  }
-
-  return (
-    <div style={{
-      padding: '32px 24px',
-      backgroundColor: 'var(--pale-green)',
-      borderRadius: 'var(--radius-lg)',
-      marginBottom: '32px',
-      border: '1px solid rgba(138, 155, 142, 0.2)',
-      animation: 'fadeIn 0.4s ease-out'
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-        <h3 style={{ 
-          fontFamily: "'Instrument Serif'", 
-          fontSize: '20px', 
-          color: 'var(--charcoal)',
-          marginBottom: 0
-        }}>
-          Strategic Growth Stages
-        </h3>
-        <button onClick={() => setExpanded(false)} aria-label="Collapse Strategic Growth Stages" style={{
-          padding: '4px 8px',
-          border: 'none',
-          background: 'transparent',
-          cursor: 'pointer',
-          fontSize: '20px',
-          color: 'var(--text-muted)',
-          lineHeight: 1
-        }}>−</button>
-      </div>
-      
-      <p style={{ 
-        color: 'var(--text-muted)', 
-        fontSize: '14px',
-        marginBottom: '28px',
-        marginTop: '8px'
-      }}>
-        Every initiative follows this natural progression from seed to bloom
-      </p>
-      
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-around',
-        alignItems: 'flex-start',
-        flexWrap: 'wrap',
-        gap: '12px',
-        maxWidth: '1000px',
-        marginBottom: '24px'
-      }} role="list">
-        {stages.map((s, i) => (
-          <div key={s.status} style={{
-            flex: '1 1 140px',
-            minWidth: '100px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            animation: `slideIn 0.4s ease-out ${i * 0.08}s both`
-          }} role="listitem">
-            <div style={{
-              padding: '12px 0',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '10px'
-            }}>
-              <div aria-label={`${s.label} stage`}>
-                <StatusIcon status={s.status} size={56} />
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--charcoal)' }}>
-                  {s.label}
-                </div>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                  {s.desc}
-                </div>
-              </div>
-            </div>
-            {i < stages.length - 1 && (
-              <div style={{
-                fontSize: '20px',
-                color: 'var(--sage-light)',
-                marginTop: '8px',
-                marginBottom: '4px'
-              }} aria-hidden="true">
-                →
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      <button
-        onClick={() => setShowAddPlan(true)}
-        style={{
-          padding: '12px 24px',
-          background: 'var(--teal)',
-          color: 'white',
-          border: 'none',
-          borderRadius: 'var(--radius-md)',
-          fontSize: '14px',
-          fontWeight: 600,
-          cursor: 'pointer',
-          transition: 'all var(--transition)'
-        }}
-        onMouseEnter={(e) => {
-          e.target.style.background = 'var(--teal-dark)';
-          e.target.style.transform = 'translateY(-2px)';
-          e.target.style.boxShadow = 'var(--shadow-md)';
-        }}
-        onMouseLeave={(e) => {
-          e.target.style.background = 'var(--teal)';
-          e.target.style.transform = 'translateY(0)';
-          e.target.style.boxShadow = 'none';
-        }}
-      >
-        + Create a New Plan
-      </button>
-    </div>
-  );
-}
-
 function App() {
   const [objectives, setObjectives] = useState(() => loadData() || sampleData());
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [currentView, setCurrentView] = useState('garden');
   const [bloomDropdown, setBloomDropdown] = useState(false);
   const [selectedObjective, setSelectedObjective] = useState(null);
@@ -1823,11 +1379,6 @@ function App() {
   useEffect(() => {
     saveData(objectives);
   }, [objectives]);
-
-  useEffect(() => {
-    const cleanup = initParticles();
-    return cleanup;
-  }, []);
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 767px)');
@@ -2604,12 +2155,13 @@ function App() {
                           </div>
                           <div style={{
                             flex: '0 0 auto',
-                            backgroundColor: 'var(--amber)',
-                            color: 'white',
-                            padding: '2px 6px',
+                            backgroundColor: 'rgba(192,122,107,0.15)',
+                            color: 'var(--amber)',
+                            padding: '2px 8px',
                             borderRadius: '3px',
                             fontSize: '11px',
-                            fontWeight: 700
+                            fontWeight: 700,
+                            border: '1px solid var(--amber)'
                           }}>
                             {days} days
                           </div>
@@ -3543,7 +3095,6 @@ function App() {
 
   return (
     <>
-      <LoadingOverlay isLoading={isLoading} />
       {!isLoggedIn ? (
         <LoginPage onLogin={setIsLoggedIn} />
       ) : (
