@@ -1879,6 +1879,21 @@ function App() {
                 </div>
               </div>
 
+              {/* Growth Metaphor Explanation */}
+              <p style={{
+                fontSize: '13px',
+                color: 'var(--text-muted)',
+                lineHeight: 1.6,
+                margin: '0 0 16px 0',
+                fontStyle: 'italic',
+                textAlign: 'center',
+                maxWidth: '720px',
+                marginLeft: 'auto',
+                marginRight: 'auto'
+              }}>
+                Every strategic initiative follows nature's rhythm — planted as a <strong style={{ color: '#8B7355' }}>Seed</strong>, nurtured through <strong style={{ color: '#5A8F5A' }}>Sprouting</strong> progress, shaped during the <strong style={{ color: '#C4956A' }}>Budding</strong> phase, and celebrated at full <strong style={{ color: '#2A6B6B' }}>Bloom</strong>. Track your organization's growth the way nature intended.
+              </p>
+
               {/* Growth Journey: Seed → Sprouting → Budding → Bloomed */}
               <div style={{
                 display: 'flex',
@@ -1886,33 +1901,98 @@ function App() {
                 justifyContent: 'center',
                 gap: '0',
                 marginBottom: '20px',
-                padding: '20px 16px',
+                padding: '24px 16px 20px',
                 backgroundColor: 'var(--card)',
                 borderRadius: '12px',
                 border: '1px solid var(--border)',
                 position: 'relative',
                 overflow: 'hidden'
               }}>
-                {/* Animated connecting line behind stages */}
+                {/* Animated connecting vine */}
                 <div style={{
                   position: 'absolute',
-                  top: '50%',
-                  left: '10%',
-                  right: '10%',
-                  height: '3px',
-                  background: 'linear-gradient(90deg, #8B7355, #5A8F5A, #D4A574, #2A6B6B)',
+                  top: '42%',
+                  left: '12%',
+                  right: '12%',
+                  height: '2px',
+                  background: 'linear-gradient(90deg, #C4B59A 0%, #8FB08F 33%, #C4956A 66%, #6B9E9E 100%)',
                   backgroundSize: '200% 100%',
-                  animation: 'gradientFlow 4s ease infinite',
-                  borderRadius: '2px',
+                  animation: 'gradientFlow 6s ease infinite',
+                  borderRadius: '1px',
                   transform: 'translateY(-50%)',
-                  opacity: 0.25,
+                  opacity: 0.3,
+                  zIndex: 0
+                }} />
+                {/* Dotted path overlay */}
+                <div style={{
+                  position: 'absolute',
+                  top: '42%',
+                  left: '12%',
+                  right: '12%',
+                  height: '2px',
+                  backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 6px, var(--card) 6px, var(--card) 10px)',
+                  transform: 'translateY(-50%)',
                   zIndex: 0
                 }} />
                 {growthStages.map((s, i) => {
                   const count = stageCounts[s.status] || 0;
                   const isActive = gardenFilter === s.status;
-                  const stageEmojis = { [STATUS.SEED]: '🌱', [STATUS.SPROUTING]: '🌿', [STATUS.BUDDING]: '🌼', [STATUS.BLOOMED]: '🌻' };
-                  const stageColors = { [STATUS.SEED]: '#8B7355', [STATUS.SPROUTING]: '#5A8F5A', [STATUS.BUDDING]: '#D4A574', [STATUS.BLOOMED]: '#2A6B6B' };
+                  const stageColors = { [STATUS.SEED]: '#8B7355', [STATUS.SPROUTING]: '#5A8F5A', [STATUS.BUDDING]: '#C4956A', [STATUS.BLOOMED]: '#2A6B6B' };
+                  const stageSvgs = {
+                    [STATUS.SEED]: (
+                      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                        <ellipse cx="24" cy="36" rx="10" ry="4" fill="#C4B59A" opacity="0.4" />
+                        <path d="M24 34 C24 28 20 24 20 20 C20 15 22 12 24 12 C26 12 28 15 28 20 C28 24 24 28 24 34Z" fill="#8B7355" />
+                        <path d="M22 18 C20 16 18 17 17 19" stroke="#5A8F5A" strokeWidth="1.5" fill="none" strokeLinecap="round" opacity="0.6" />
+                        <circle cx="24" cy="20" r="1.5" fill="#C4B59A" opacity="0.5" />
+                      </svg>
+                    ),
+                    [STATUS.SPROUTING]: (
+                      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                        <ellipse cx="24" cy="38" rx="8" ry="3" fill="#C4B59A" opacity="0.3" />
+                        <path d="M24 38 L24 22" stroke="#5A8F5A" strokeWidth="2" strokeLinecap="round" />
+                        <path d="M24 28 C20 26 17 22 16 18" stroke="#5A8F5A" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+                        <path d="M16 18 C16 16 18 14 20 14 C22 14 24 18 24 22" fill="#7AB87A" opacity="0.7" />
+                        <path d="M24 24 C28 22 30 18 30 16" stroke="#5A8F5A" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+                        <path d="M30 16 C30 14 28 12 26 13 C24 14 24 18 24 20" fill="#8FC88F" opacity="0.6" />
+                        <circle cx="22" cy="15" r="0.8" fill="#fff" opacity="0.4" />
+                      </svg>
+                    ),
+                    [STATUS.BUDDING]: (
+                      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                        <ellipse cx="24" cy="40" rx="7" ry="2.5" fill="#C4B59A" opacity="0.3" />
+                        <path d="M24 40 L24 20" stroke="#5A8F5A" strokeWidth="2" strokeLinecap="round" />
+                        <path d="M24 30 C19 28 16 24 15 20" stroke="#5A8F5A" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+                        <path d="M15 20 C15 17 18 15 20 16 C22 17 24 22 24 26" fill="#7AB87A" opacity="0.6" />
+                        <path d="M24 28 C29 26 32 22 33 19" stroke="#5A8F5A" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+                        <path d="M33 19 C33 17 30 15 28 16 C26 17 24 22 24 25" fill="#8FC88F" opacity="0.5" />
+                        <circle cx="24" cy="16" r="5" fill="#F2D4B0" opacity="0.8" />
+                        <circle cx="24" cy="16" r="3.5" fill="#E8B88A" opacity="0.7" />
+                        <path d="M22 14 C22 12 24 10 24 10 C24 10 26 12 26 14" fill="#C4956A" opacity="0.6" />
+                        <circle cx="24" cy="14" r="1" fill="#D4A574" />
+                      </svg>
+                    ),
+                    [STATUS.BLOOMED]: (
+                      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                        <ellipse cx="24" cy="42" rx="6" ry="2" fill="#C4B59A" opacity="0.3" />
+                        <path d="M24 42 L24 22" stroke="#5A8F5A" strokeWidth="2" strokeLinecap="round" />
+                        <path d="M24 32 C18 30 14 26 14 22" stroke="#5A8F5A" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+                        <path d="M14 22 C14 19 17 17 19 18 C21 19 24 24 24 28" fill="#7AB87A" opacity="0.5" />
+                        <path d="M24 30 C30 28 34 24 34 21" stroke="#5A8F5A" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+                        <path d="M34 21 C34 18 31 17 29 18 C27 19 24 24 24 27" fill="#8FC88F" opacity="0.4" />
+                        {[0,1,2,3,4,5,6,7].map(j => {
+                          const a = (j / 8) * 360;
+                          const r = a * Math.PI / 180;
+                          const px = 24 + Math.cos(r) * 8;
+                          const py = 14 + Math.sin(r) * 8;
+                          return <ellipse key={j} cx={px} cy={py} rx="4" ry="6.5" fill={j % 2 === 0 ? '#D4A574' : '#E8C49A'} opacity={0.75} transform={'rotate(' + (a + 90) + ' ' + px + ' ' + py + ')'} />;
+                        })}
+                        <circle cx="24" cy="14" r="4.5" fill="#C9A94E" />
+                        <circle cx="24" cy="14" r="2.5" fill="#8B7355" opacity="0.5" />
+                        <circle cx="22.5" cy="12.5" r="0.8" fill="#fff" opacity="0.3" />
+                      </svg>
+                    )
+                  };
                   return (
                     <React.Fragment key={s.status}>
                       <button
@@ -1921,51 +2001,57 @@ function App() {
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'center',
-                          gap: '6px',
-                          padding: '14px 16px',
-                          background: isActive ? 'rgba(42,107,107,0.08)' : 'transparent',
-                          border: isActive ? '2px solid var(--teal)' : '2px solid transparent',
+                          gap: '8px',
+                          padding: '14px 12px',
+                          background: isActive ? 'rgba(42,107,107,0.06)' : 'transparent',
+                          border: isActive ? '1.5px solid var(--teal)' : '1.5px solid transparent',
                           borderRadius: '14px',
                           cursor: 'pointer',
                           transition: 'all 0.3s ease',
                           flex: '1',
-                          minWidth: '90px',
+                          minWidth: '100px',
                           position: 'relative',
                           zIndex: 1
                         }}
                         title={'Filter: ' + s.label}
                       >
-                        <span style={{
-                          fontSize: '36px',
-                          lineHeight: 1,
+                        <div style={{
+                          width: '56px',
+                          height: '56px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
                           animation: count > 0 ? 'sproutGrowUp 0.8s ease-out' : 'none',
-                          filter: count === 0 ? 'grayscale(0.6) opacity(0.4)' : 'none',
-                          transition: 'transform 0.3s ease'
-                        }}>{stageEmojis[s.status]}</span>
+                          filter: count === 0 ? 'grayscale(0.5) opacity(0.35)' : 'none',
+                          transition: 'all 0.4s ease'
+                        }}>
+                          {stageSvgs[s.status]}
+                        </div>
                         <span style={{
-                          fontSize: '14px',
+                          fontSize: '13px',
                           fontWeight: 600,
                           color: isActive ? 'var(--teal)' : stageColors[s.status],
-                          letterSpacing: '0.3px'
+                          letterSpacing: '0.4px'
                         }}>{s.label}</span>
                         <span style={{
-                          fontSize: '11px',
+                          fontSize: '10.5px',
                           color: 'var(--text-muted)',
-                          fontStyle: 'italic'
+                          fontStyle: 'italic',
+                          opacity: 0.8
                         }}>{s.desc}</span>
                         <span style={{
                           display: 'inline-flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          width: '28px',
-                          height: '28px',
+                          width: '26px',
+                          height: '26px',
                           borderRadius: '50%',
                           backgroundColor: isActive ? 'var(--teal)' : stageColors[s.status],
                           color: '#fff',
-                          fontSize: '13px',
+                          fontSize: '12px',
                           fontWeight: 700,
-                          marginTop: '4px',
-                          opacity: count === 0 ? 0.35 : 1,
+                          marginTop: '2px',
+                          opacity: count === 0 ? 0.3 : 0.9,
                           transition: 'all 0.3s'
                         }}>{count}</span>
                       </button>
@@ -1973,12 +2059,15 @@ function App() {
                         <div style={{
                           display: 'flex',
                           alignItems: 'center',
-                          color: 'var(--sage)',
-                          fontSize: '20px',
                           padding: '0 2px',
-                          opacity: 0.5,
-                          zIndex: 1
-                        }}>→</div>
+                          zIndex: 1,
+                          marginTop: '-12px'
+                        }}>
+                          <svg width="24" height="12" viewBox="0 0 24 12" style={{ opacity: 0.3 }}>
+                            <path d="M0 6 L18 6" stroke="var(--sage)" strokeWidth="1.5" strokeDasharray="3 2" />
+                            <path d="M15 2 L20 6 L15 10" stroke="var(--sage)" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </div>
                       )}
                     </React.Fragment>
                   );
