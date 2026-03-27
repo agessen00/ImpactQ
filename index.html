@@ -144,7 +144,7 @@ const { useState, useEffect, useRef, useCallback, useMemo } = React;
 // ============================================================
 // CONFIG
 // ============================================================
-const APP_VERSION = 'v4.2';
+const APP_VERSION = 'v4.3';
 const STORAGE_KEY = 'impactq_data_v4_dgr';
 const MAX_OBJECTIVES = 7;
 const MAX_PLANS = 8;
@@ -1248,14 +1248,19 @@ function PlanCard({ plan, objective, onEdit, onDelete, onStatusChange, onProgres
               fontSize: '11px',
               backgroundColor: statusMeta.bg,
               color: statusMeta.color,
-              padding: '4px 8px',
-              borderRadius: 'var(--radius-sm)',
-              fontWeight: 500,
-              border: 'none',
+              padding: '4px 10px 4px 8px',
+              borderRadius: '12px',
+              fontWeight: 600,
+              border: '1px solid ' + statusMeta.color + '22',
               cursor: 'pointer',
-              transition: 'all var(--transition)'
-            }} title="Click to cycle status">
+              transition: 'all var(--transition)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px'
+            }} title="Click to advance status →">
+              <StageIcon status={plan.status} size={12} />
               {statusMeta.label}
+              {plan.status !== STATUS.BLOOMED && <span style={{ fontSize: '9px', opacity: 0.6 }}>→</span>}
             </button>
             {plan.targetDate && (
               <span style={{
@@ -1756,7 +1761,12 @@ function App() {
   const [healthMode, setHealthMode] = useState(() => localStorage.getItem('impactq_health_mode') || 'average');
   const [riskThreshold, setRiskThreshold] = useState(() => parseInt(localStorage.getItem('impactq_risk_threshold') || '25'));
   const [gardenViewMode, setGardenViewMode] = useState('grid');
+  const [gardenSearch, setGardenSearch] = useState('');
+  const [gardenOwnerFilter, setGardenOwnerFilter] = useState('');
   const [keyboardHintVisible, setKeyboardHintVisible] = useState(true);
+  const [tlFilterStatus, setTlFilterStatus] = useState('');
+  const [tlFilterOwner, setTlFilterOwner] = useState('');
+  const [tlFilterAtRisk, setTlFilterAtRisk] = useState(false);
   const tlScrollRef = useRef(null);
 
   useEffect(() => {
@@ -1869,9 +1879,12 @@ function App() {
     const stageCounts = {};
     allPlansFlat.forEach(p => { stageCounts[p.status] = (stageCounts[p.status] || 0) + 1; });
 
-    const filteredObjectives = gardenFilter
-      ? objectives.filter(o => o.plans.some(p => p.status === gardenFilter))
-      : objectives;
+    const filteredObjectives = objectives.filter(o => {
+      if (gardenFilter && !o.plans.some(p => p.status === gardenFilter)) return false;
+      if (gardenSearch && !o.title.toLowerCase().includes(gardenSearch.toLowerCase())) return false;
+      if (gardenOwnerFilter && !o.plans.some(p => p.owner === gardenOwnerFilter)) return false;
+      return true;
+    });
 
     return (
       <div style={{ position: 'relative', zIndex: 1 }}>
@@ -2169,6 +2182,74 @@ function App() {
                 })}
               </div>
 
+              {/* Search & Filter Row */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                marginBottom: '12px',
+                flexWrap: 'wrap'
+              }}>
+                {/* Search Input */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  flex: '1 1 200px',
+                  minWidth: '160px',
+                  backgroundColor: 'var(--card)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '8px',
+                  padding: '6px 10px'
+                }}>
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ opacity: 0.4, flexShrink: 0 }}>
+                    <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5" fill="none" />
+                    <line x1="11" y1="11" x2="14" y2="14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                  <input
+                    type="text"
+                    placeholder="Search initiatives..."
+                    value={gardenSearch}
+                    onChange={(e) => setGardenSearch(e.target.value)}
+                    style={{
+                      border: 'none',
+                      outline: 'none',
+                      background: 'transparent',
+                      fontSize: '12px',
+                      color: 'var(--charcoal)',
+                      width: '100%',
+                      fontFamily: 'Inter, sans-serif'
+                    }}
+                  />
+                  {gardenSearch && (
+                    <button onClick={() => setGardenSearch('')} style={{
+                      border: 'none', background: 'none', cursor: 'pointer', fontSize: '14px',
+                      color: 'var(--text-muted)', padding: '0 2px', lineHeight: 1
+                    }}>×</button>
+                  )}
+                </div>
+                {/* Owner Filter */}
+                <select
+                  value={gardenOwnerFilter}
+                  onChange={(e) => setGardenOwnerFilter(e.target.value)}
+                  style={{
+                    padding: '6px 10px',
+                    fontSize: '12px',
+                    border: '1px solid var(--border)',
+                    borderRadius: '8px',
+                    background: 'var(--card)',
+                    cursor: 'pointer',
+                    color: gardenOwnerFilter ? 'var(--teal)' : 'var(--text-secondary)',
+                    fontWeight: gardenOwnerFilter ? 600 : 400
+                  }}
+                >
+                  <option value="">All Owners</option>
+                  {getUniqueOwners().map(owner => (
+                    <option key={owner} value={owner}>{owner}</option>
+                  ))}
+                </select>
+              </div>
+
               {/* Action Bar */}
               <div style={{
                 display: 'flex',
@@ -2176,8 +2257,8 @@ function App() {
                 justifyContent: 'flex-end',
                 gap: '8px'
               }}>
-                {gardenFilter && (
-                  <button onClick={() => setGardenFilter('')} style={{
+                {(gardenFilter || gardenSearch || gardenOwnerFilter) && (
+                  <button onClick={() => { setGardenFilter(''); setGardenSearch(''); setGardenOwnerFilter(''); }} style={{
                     padding: '5px 10px', fontSize: '11px', border: '1px solid var(--border)',
                     background: 'var(--card)', color: 'var(--text-muted)', borderRadius: '12px',
                     cursor: 'pointer', marginRight: 'auto'
@@ -2203,6 +2284,17 @@ function App() {
                 }}>+ Add</button>
               </div>
             </div>
+
+            {(gardenFilter || gardenSearch || gardenOwnerFilter) && (
+              <div style={{
+                fontSize: '12px',
+                color: 'var(--text-muted)',
+                marginBottom: '12px',
+                fontStyle: 'italic'
+              }}>
+                Showing {filteredObjectives.length} of {objectives.length} initiatives
+              </div>
+            )}
 
             {/* Grid or List View */}
             {gardenViewMode === 'grid' ? (
@@ -2702,13 +2794,18 @@ function App() {
             scrollMarginTop: '80px'
           }}>
             {/* Total Initiatives */}
-            <div style={{
+            <div onClick={() => { setCurrentView('garden'); }} style={{
               backgroundColor: 'var(--card)',
               border: '1px solid var(--border)',
               borderRadius: 'var(--radius-lg)',
               padding: isMobile ? '16px' : '20px',
-              textAlign: 'center'
-            }}>
+              textAlign: 'center',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--teal)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; }}
+            >
               <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 Total Initiatives
               </div>
@@ -2750,13 +2847,21 @@ function App() {
             </div>
 
             {/* At Risk */}
-            <div style={{
+            <div onClick={() => {
+              const el = document.getElementById('present-risk');
+              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }} style={{
               backgroundColor: 'var(--card)',
               border: `1px solid ${atRiskPlans.length > 0 ? 'var(--amber)' : 'var(--border)'}`,
               borderRadius: 'var(--radius-lg)',
               padding: isMobile ? '16px' : '20px',
-              textAlign: 'center'
-            }}>
+              textAlign: 'center',
+              cursor: atRiskPlans.length > 0 ? 'pointer' : 'default',
+              transition: 'all 0.2s'
+            }}
+              onMouseEnter={(e) => { if (atRiskPlans.length > 0) e.currentTarget.style.borderColor = 'var(--amber)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = atRiskPlans.length > 0 ? 'var(--amber)' : 'var(--border)'; }}
+            >
               <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 At Risk
               </div>
@@ -2784,15 +2889,23 @@ function App() {
                 const health = calcHealth(obj.plans);
                 const hasAtRisk = obj.plans.some(p => p.atRisk === true);
                 return (
-                  <div key={obj.id} style={{
+                  <div key={obj.id} onClick={() => {
+                    setSelectedObjective(obj);
+                    setCurrentView('bloom');
+                  }} style={{
                     backgroundColor: 'var(--card)',
                     border: '1px solid var(--border)',
                     borderRadius: 'var(--radius-md)',
                     padding: '14px 16px',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '16px'
-                  }}>
+                    gap: '16px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--teal)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
+                  >
                     {/* Title */}
                     <div style={{ flex: '0 0 auto', minWidth: isMobile ? '80px' : '150px' }}>
                       <div style={{
@@ -2871,68 +2984,75 @@ function App() {
           {/* ===== RISK SPOTLIGHT SECTION ===== */}
           <div id="present-risk" style={{ scrollMarginTop: '80px' }} />
           {atRiskPlans.length > 0 && (
-            <div style={{
-              marginBottom: '40px',
-              backgroundColor: 'rgba(217, 119, 6, 0.05)',
-              border: '2px solid var(--amber)',
-              borderRadius: 'var(--radius-lg)',
-              padding: isMobile ? '16px' : '24px'
-            }}>
-              <h3 style={{
+            <div style={{ marginBottom: '40px' }}>
+              <h2 style={{
                 fontFamily: "'Instrument Serif'",
-                fontSize: isMobile ? '16px' : '20px',
-                color: 'var(--amber)',
+                fontSize: isMobile ? '18px' : '22px',
+                color: 'var(--charcoal)',
                 marginBottom: '16px',
-                marginTop: 0,
                 fontWeight: 700,
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px'
               }}>
-                ⚠ Risk Spotlight
-              </h3>
+                Risk Spotlight
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  width: '22px', height: '22px', borderRadius: '50%',
+                  backgroundColor: 'rgba(192,122,107,0.12)', color: 'var(--amber)',
+                  fontSize: '11px', fontWeight: 700
+                }}>{atRiskPlans.length}</span>
+              </h2>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {atRiskPlans
-                  .sort((a, b) => {
-                    const daysA = daysRemaining(a.targetDate);
-                    const daysB = daysRemaining(b.targetDate);
-                    return daysA - daysB;
-                  })
+                  .sort((a, b) => daysRemaining(a.targetDate) - daysRemaining(b.targetDate))
                   .map(plan => {
                     const days = daysRemaining(plan.targetDate);
                     const obj = objectives.find(o => o.id === plan.objectiveId);
                     return (
-                      <div key={plan.id} style={{
+                      <div key={plan.id} onClick={() => {
+                        if (obj) { setSelectedObjective(obj); setCurrentView('bloom'); }
+                      }} style={{
                         backgroundColor: 'var(--card)',
-                        border: '1px solid var(--amber)',
+                        border: '1px solid var(--border)',
+                        borderLeft: '3px solid var(--amber)',
                         borderRadius: 'var(--radius-md)',
                         padding: '12px 14px',
-                        fontSize: '13px'
-                      }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: '8px', marginBottom: '6px' }}>
-                          <div style={{ fontWeight: 600, color: 'var(--charcoal)' }}>
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '14px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
+                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--amber)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.borderLeftColor = 'var(--amber)'; e.currentTarget.style.boxShadow = 'none'; }}
+                      >
+                        {/* Amber risk dot */}
+                        <div style={{
+                          width: '8px', height: '8px', borderRadius: '50%',
+                          backgroundColor: 'var(--amber)', flexShrink: 0,
+                          animation: 'dotPulse 2s ease-in-out infinite'
+                        }} />
+                        {/* Content */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--charcoal)', marginBottom: '2px' }}>
                             {plan.title}
                           </div>
-                          <div style={{
-                            flex: '0 0 auto',
-                            backgroundColor: 'rgba(192,122,107,0.15)',
-                            color: 'var(--amber)',
-                            padding: '2px 8px',
-                            borderRadius: '3px',
-                            fontSize: '11px',
-                            fontWeight: 700,
-                            border: '1px solid var(--amber)'
-                          }}>
-                            {days} days
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                            <span>{obj?.title}</span>
+                            {plan.owner && <span>· {plan.owner}</span>}
                           </div>
                         </div>
-                        <div style={{ color: 'var(--text-secondary)', fontSize: '12px', marginBottom: '4px' }}>
-                          Initiative: {obj?.title}
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'auto 1fr', gap: isMobile ? '4px' : '12px', color: 'var(--text-muted)', fontSize: '12px' }}>
-                          {plan.owner && <span>Owner: {plan.owner}</span>}
-                          {plan.targetDate && <span>Due: {new Date(plan.targetDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
+                        {/* Days badge */}
+                        <div style={{
+                          flexShrink: 0,
+                          fontSize: '11px', fontWeight: 600,
+                          color: days < 30 ? '#C07A6B' : 'var(--text-muted)',
+                          backgroundColor: days < 30 ? 'rgba(192,122,107,0.08)' : 'var(--pale-bg)',
+                          padding: '3px 8px', borderRadius: '10px'
+                        }}>
+                          {days}d
                         </div>
                       </div>
                     );
@@ -2963,13 +3083,21 @@ function App() {
                 const health = calcHealth(obj.plans);
                 const onTrack = onTrackCount(obj.plans);
                 return (
-                  <div key={obj.id} style={{
+                  <div key={obj.id} onClick={() => {
+                    setSelectedObjective(obj);
+                    setCurrentView('bloom');
+                  }} style={{
                     backgroundColor: 'var(--card)',
                     border: '1px solid var(--border)',
                     borderRadius: 'var(--radius-lg)',
                     padding: isMobile ? '16px' : '20px',
-                    boxShadow: 'var(--shadow-sm)'
-                  }}>
+                    boxShadow: 'var(--shadow-sm)',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.08)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
+                  >
                     {/* Title & Health Ring */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '12px', gap: '12px' }}>
                       <div>
@@ -3331,6 +3459,14 @@ function App() {
       });
     });
 
+    // Apply timeline filters
+    const filteredPlans = allPlans.filter(p => {
+      if (tlFilterStatus && p.status !== tlFilterStatus) return false;
+      if (tlFilterOwner && p.owner !== tlFilterOwner) return false;
+      if (tlFilterAtRisk && !p.atRisk) return false;
+      return true;
+    });
+
     const year = tlMonth.year;
     const month = tlMonth.month;
     const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -3343,7 +3479,7 @@ function App() {
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
     const plansByObjective = {};
-    allPlans.forEach(plan => {
+    filteredPlans.forEach(plan => {
       if (!plansByObjective[plan.objectiveName]) plansByObjective[plan.objectiveName] = [];
       plansByObjective[plan.objectiveName].push(plan);
     });
@@ -3434,6 +3570,12 @@ function App() {
       if (dow === 1 && d > 1) weekLines.push(d);
     }
 
+    // Get unique owners for filter dropdown
+    const uniqueOwners = Array.from(new Set(allPlans.map(p => p.owner).filter(Boolean))).sort();
+
+    // Check if any filter is active
+    const hasActiveFilter = tlFilterStatus || tlFilterOwner || tlFilterAtRisk;
+
     return (
       <div style={{
         display: 'flex',
@@ -3509,6 +3651,117 @@ function App() {
               transition: 'all 0.2s', textTransform: 'uppercase'
             }}>Today</button>
           </div>
+        </div>
+
+        {/* FILTER BAR */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          padding: '12px 28px',
+          background: 'var(--card)',
+          borderBottom: '1px solid var(--border)',
+          overflowX: 'auto',
+          flexWrap: 'wrap'
+        }}>
+          {/* Status filter pills */}
+          {[STATUS.SEED, STATUS.SPROUTING, STATUS.BUDDING, STATUS.BLOOMED].map(status => (
+            <button
+              key={status}
+              onClick={() => setTlFilterStatus(tlFilterStatus === status ? '' : status)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 12px',
+                borderRadius: '20px',
+                border: tlFilterStatus === status ? 'none' : '1px solid var(--border)',
+                background: tlFilterStatus === status ? 'var(--teal)' : 'var(--card)',
+                color: tlFilterStatus === status ? 'white' : 'var(--charcoal)',
+                fontSize: '12px',
+                fontWeight: 500,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              <StageIcon status={status} size={14} />
+              {STATUS_META[status].label}
+            </button>
+          ))}
+
+          {/* Owner filter dropdown */}
+          <select
+            value={tlFilterOwner}
+            onChange={(e) => setTlFilterOwner(e.target.value)}
+            style={{
+              padding: '6px 12px',
+              borderRadius: '20px',
+              border: '1px solid var(--border)',
+              background: tlFilterOwner ? 'var(--teal)' : 'var(--card)',
+              color: tlFilterOwner ? 'white' : 'var(--charcoal)',
+              fontSize: '12px',
+              fontWeight: 500,
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            <option value="">All Owners</option>
+            {uniqueOwners.map(owner => (
+              <option key={owner} value={owner}>{owner}</option>
+            ))}
+          </select>
+
+          {/* At-Risk toggle */}
+          <button
+            onClick={() => setTlFilterAtRisk(!tlFilterAtRisk)}
+            style={{
+              padding: '6px 12px',
+              borderRadius: '20px',
+              border: tlFilterAtRisk ? 'none' : '1px solid var(--border)',
+              background: tlFilterAtRisk ? 'var(--amber)' : 'var(--card)',
+              color: tlFilterAtRisk ? 'white' : 'var(--charcoal)',
+              fontSize: '12px',
+              fontWeight: 500,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            At Risk
+          </button>
+
+          {/* Spacer */}
+          <div style={{ flex: 1 }} />
+
+          {/* Showing X of Y plans summary */}
+          <span style={{ fontSize: '12px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+            Showing {filteredPlans.length} of {allPlans.length} plans
+          </span>
+
+          {/* Clear All button */}
+          {hasActiveFilter && (
+            <button
+              onClick={() => {
+                setTlFilterStatus('');
+                setTlFilterOwner('');
+                setTlFilterAtRisk(false);
+              }}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '20px',
+                border: '1px solid var(--border)',
+                background: 'var(--card)',
+                color: 'var(--text-secondary)',
+                fontSize: '12px',
+                fontWeight: 500,
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              Clear All
+            </button>
+          )}
         </div>
 
         {/* GANTT BODY */}
