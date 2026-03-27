@@ -2000,6 +2000,9 @@ function App() {
                 {growthStages.map((s, i) => {
                   const count = stageCounts[s.status] || 0;
                   const isActive = gardenFilter === s.status;
+                  // Map stages to views for "you are here" indicator
+                  const stageViewMap = { [STATUS.SEED]: 'garden', [STATUS.SPROUTING]: 'timeline', [STATUS.BUDDING]: 'bloom', [STATUS.BLOOMED]: 'present' };
+                  const isCurrentSection = !gardenFilter && stageViewMap[s.status] === currentView;
                   const stageColors = { [STATUS.SEED]: '#8B7355', [STATUS.SPROUTING]: '#5A8F5A', [STATUS.BUDDING]: '#C4956A', [STATUS.BLOOMED]: '#2A6B6B' };
                   const stageSvgs = {
                     [STATUS.SEED]: (
@@ -2059,24 +2062,35 @@ function App() {
                   return (
                     <React.Fragment key={s.status}>
                       <button
-                        onClick={() => setGardenFilter(isActive ? '' : s.status)}
+                        onClick={() => {
+                          if (currentView === 'present') {
+                            // In present mode, scroll to relevant section
+                            const sectionIds = { [STATUS.SEED]: 'present-summary', [STATUS.SPROUTING]: 'present-health', [STATUS.BUDDING]: 'present-risk', [STATUS.BLOOMED]: 'present-initiatives' };
+                            const el = document.getElementById(sectionIds[s.status]);
+                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          } else {
+                            // In garden mode, toggle filter
+                            setGardenFilter(isActive ? '' : s.status);
+                          }
+                        }}
                         style={{
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'center',
                           gap: '8px',
                           padding: '14px 12px',
-                          background: isActive ? 'rgba(42,107,107,0.06)' : 'transparent',
-                          border: isActive ? '1.5px solid var(--teal)' : '1.5px solid transparent',
+                          background: isActive ? 'rgba(42,107,107,0.1)' : isCurrentSection ? 'rgba(42,107,107,0.06)' : 'transparent',
+                          border: isActive ? '2px solid var(--teal)' : isCurrentSection ? '2px solid rgba(42,107,107,0.3)' : '2px solid transparent',
                           borderRadius: '14px',
                           cursor: 'pointer',
                           transition: 'all 0.3s ease',
                           flex: '1',
                           minWidth: '100px',
                           position: 'relative',
-                          zIndex: 1
+                          zIndex: 1,
+                          boxShadow: isActive ? '0 4px 16px rgba(42,107,107,0.15)' : 'none'
                         }}
-                        title={'Filter: ' + s.label}
+                        title={currentView === 'present' ? 'Jump to: ' + s.label : 'Filter: ' + s.label}
                       >
                         <div style={{
                           width: '56px',
@@ -2092,15 +2106,15 @@ function App() {
                         </div>
                         <span style={{
                           fontSize: '13px',
-                          fontWeight: 600,
-                          color: isActive ? 'var(--teal)' : stageColors[s.status],
+                          fontWeight: (isActive || isCurrentSection) ? 700 : 600,
+                          color: (isActive || isCurrentSection) ? 'var(--teal)' : stageColors[s.status],
                           letterSpacing: '0.4px'
                         }}>{s.label}</span>
                         <span style={{
                           fontSize: '10.5px',
-                          color: 'var(--text-muted)',
+                          color: isCurrentSection ? 'var(--teal)' : 'var(--text-muted)',
                           fontStyle: 'italic',
-                          opacity: 0.8
+                          opacity: isCurrentSection ? 1 : 0.8
                         }}>{s.desc}</span>
                         <span style={{
                           display: 'inline-flex',
@@ -2109,7 +2123,7 @@ function App() {
                           width: '26px',
                           height: '26px',
                           borderRadius: '50%',
-                          backgroundColor: isActive ? 'var(--teal)' : stageColors[s.status],
+                          backgroundColor: (isActive || isCurrentSection) ? 'var(--teal)' : stageColors[s.status],
                           color: '#fff',
                           fontSize: '12px',
                           fontWeight: 700,
@@ -2117,6 +2131,24 @@ function App() {
                           opacity: count === 0 ? 0.3 : 0.9,
                           transition: 'all 0.3s'
                         }}>{count}</span>
+                        {/* "You are here" indicator */}
+                        {isCurrentSection && (
+                          <div style={{
+                            position: 'absolute',
+                            bottom: '4px',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '3px'
+                          }}>
+                            <div style={{
+                              width: '6px', height: '6px', borderRadius: '50%',
+                              backgroundColor: 'var(--teal)',
+                              animation: 'dotPulse 2s ease-in-out infinite'
+                            }} />
+                          </div>
+                        )}
                       </button>
                       {i < growthStages.length - 1 && (
                         <div style={{
@@ -2607,12 +2639,67 @@ function App() {
             </div>
           </div>
 
-          {/* ===== EXECUTIVE SUMMARY CARDS ===== */}
+          {/* ===== PRESENT VIEW NAVIGATION STRIP ===== */}
           <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px',
+            marginBottom: '32px',
+            padding: '14px 16px',
+            backgroundColor: 'var(--pale-green)',
+            borderRadius: '12px',
+            border: '1px solid rgba(138,155,142,0.2)'
+          }}>
+            {[
+              { status: STATUS.SEED, label: 'Summary', target: 'present-summary' },
+              { status: STATUS.SPROUTING, label: 'Health', target: 'present-health' },
+              { status: STATUS.BUDDING, label: 'Risks', target: 'present-risk' },
+              { status: STATUS.BLOOMED, label: 'Initiatives', target: 'present-initiatives' }
+            ].map((nav, i) => {
+              const stageColors = { [STATUS.SEED]: '#8B7355', [STATUS.SPROUTING]: '#5A8F5A', [STATUS.BUDDING]: '#C4956A', [STATUS.BLOOMED]: '#2A6B6B' };
+              return (
+                <React.Fragment key={nav.status}>
+                  <button onClick={() => {
+                    const el = document.getElementById(nav.target);
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '8px 16px',
+                    backgroundColor: 'var(--card)',
+                    border: '1.5px solid var(--border)',
+                    borderRadius: '10px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    flex: '1',
+                    justifyContent: 'center'
+                  }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = stageColors[nav.status]; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
+                  >
+                    <StageIcon status={nav.status} size={22} />
+                    <span style={{ fontSize: '13px', fontWeight: 600, color: stageColors[nav.status] }}>{nav.label}</span>
+                  </button>
+                  {i < 3 && (
+                    <svg width="16" height="10" viewBox="0 0 16 10" style={{ opacity: 0.25, flexShrink: 0 }}>
+                      <path d="M0 5 L10 5" stroke="var(--sage)" strokeWidth="1.5" strokeDasharray="2 2" />
+                      <path d="M8 2 L12 5 L8 8" stroke="var(--sage)" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+                    </svg>
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </div>
+
+          {/* ===== EXECUTIVE SUMMARY CARDS ===== */}
+          <div id="present-summary" style={{
             display: 'grid',
             gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)',
             gap: isMobile ? '12px' : '16px',
-            marginBottom: '40px'
+            marginBottom: '40px',
+            scrollMarginTop: '80px'
           }}>
             {/* Total Initiatives */}
             <div style={{
@@ -2680,6 +2767,7 @@ function App() {
           </div>
 
           {/* ===== PORTFOLIO HEALTH BY INITIATIVE (Horizontal Bars) ===== */}
+          <div id="present-health" style={{ scrollMarginTop: '80px' }} />
           <div style={{ marginBottom: '40px' }}>
             <h2 style={{
               fontFamily: "'Instrument Serif'",
@@ -2781,6 +2869,7 @@ function App() {
           </div>
 
           {/* ===== RISK SPOTLIGHT SECTION ===== */}
+          <div id="present-risk" style={{ scrollMarginTop: '80px' }} />
           {atRiskPlans.length > 0 && (
             <div style={{
               marginBottom: '40px',
@@ -2853,6 +2942,7 @@ function App() {
           )}
 
           {/* ===== INITIATIVE DETAIL CARDS ===== */}
+          <div id="present-initiatives" style={{ scrollMarginTop: '80px' }} />
           <div style={{ marginBottom: '40px' }}>
             <h2 style={{
               fontFamily: "'Instrument Serif'",
