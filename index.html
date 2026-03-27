@@ -88,6 +88,46 @@
     .text-sm { font-size: 12px; }
     @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
     @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+    @keyframes confettiBurst { 0% { transform: scale(0.3) rotate(-15deg); opacity:1; } 50% { transform: scale(1.3) rotate(10deg); opacity:0.8; } 100% { transform: scale(1) rotate(0); opacity:0; } }
+    @keyframes sproutGrowUp { from { transform: translateY(20px) scale(0.5); opacity:0; } to { transform: translateY(0) scale(1); opacity:1; } }
+    @keyframes pulseWarning { 0%,100% { box-shadow: 0 0 0 0 rgba(192,122,107,0); } 50% { box-shadow: 0 0 12px 4px rgba(192,122,107,0.3); } }
+    @keyframes shimmerGold { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+    @keyframes celebrateBounce { 0% { transform: scale(1); } 30% { transform: scale(1.15); } 60% { transform: scale(0.95); } 100% { transform: scale(1); } }
+    @keyframes slideUpStagger { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes dotPulse { 0%,100% { opacity:0.4; transform:scale(0.8); } 50% { opacity:1; transform:scale(1); } }
+    @keyframes navSlide { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+    .theme-renaissance {
+      --surface: #F5F0E8;
+      --card: #FFFDF8;
+      --charcoal: #3D2E26;
+      --text-secondary: #5C3D2E;
+      --text-muted: #8B7355;
+      --teal: #1E5252;
+      --teal-light: #2A6B6B;
+      --teal-dark: #153D3D;
+      --sage: #6B7F70;
+      --gold: #C9A94E;
+      --gold-light: #E0CC80;
+      --gold-dark: #A8892E;
+      --amber: #6B2D3E;
+      --amber-light: #8B4D5E;
+      --border: #D4C9B8;
+      --pale-bg: #EDE5D8;
+      --pale-green: #E8EDE0;
+    }
+    .theme-dark {
+      --surface: #1A1D1A;
+      --card: #242824;
+      --charcoal: #E8E5DC;
+      --text-secondary: #B8B0A4;
+      --text-muted: #8A8070;
+      --border: #3A3D3A;
+      --pale-bg: #2A2D2A;
+      --pale-green: #1E241E;
+    }
+    @keyframes gradientFlow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+    .glass { backdrop-filter: blur(20px) saturate(1.2); -webkit-backdrop-filter: blur(20px) saturate(1.2); background: rgba(255,255,255,0.75); }
+    .glass-dark { backdrop-filter: blur(20px) saturate(1.2); -webkit-backdrop-filter: blur(20px) saturate(1.2); background: rgba(30,30,30,0.8); }
   </style>
 </head>
 <body>
@@ -104,7 +144,7 @@ const { useState, useEffect, useRef, useCallback, useMemo } = React;
 // ============================================================
 // CONFIG
 // ============================================================
-const APP_VERSION = 'v4.0';
+const APP_VERSION = 'v4.2';
 const STORAGE_KEY = 'impactq_data_v4_dgr';
 const MAX_OBJECTIVES = 7;
 const MAX_PLANS = 8;
@@ -365,7 +405,7 @@ function saveData(d) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)
 // ============================================================
 // PARTICLE SYSTEM
 // ============================================================
-function initParticles() {
+function initParticles(health = 50) {
   const c = document.getElementById('particle-canvas');
   if (!c) return () => {};
   const ctx = c.getContext('2d');
@@ -375,13 +415,14 @@ function initParticles() {
   resize(); window.addEventListener('resize', resize);
   if (reduced) return () => {};
   const N = Math.min(45, Math.floor(window.innerWidth / 30));
-  const cols = ['138,155,142', '42,107,107', '212,165,116', '168,155,107'];
+  const baseVyMultiplier = health > 70 ? 1.8 : health < 30 ? 0.4 : 1.0;
+  const cols = health > 70 ? ['100,180,150', '42,107,107', '138,155,142'] : health < 30 ? ['212,165,116', '192,122,107', '168,155,107'] : ['138,155,142', '42,107,107', '212,165,116', '168,155,107'];
   for (let i = 0; i < N; i++) {
     particles.push({
       x: Math.random() * c.width, y: Math.random() * c.height,
-      r: 1.0 + Math.random() * 2.5, vx: (Math.random() - 0.5) * 0.2, vy: -0.1 - Math.random() * 0.15,
+      r: 1.0 + Math.random() * 2.5, vx: (Math.random() - 0.5) * 0.2, vy: (-0.1 - Math.random() * 0.15) * baseVyMultiplier,
       col: cols[Math.floor(Math.random() * cols.length)], ph: Math.random() * Math.PI * 2, sp: 0.001 + Math.random() * 0.003,
-      drift: (Math.random() - 0.5) * 0.01
+      drift: (Math.random() - 0.5) * 0.01, type: health > 70 && Math.random() < 0.15 ? 'sparkle' : 'normal', life: 1
     });
   }
   function draw() {
@@ -392,8 +433,11 @@ function initParticles() {
       p.y += p.vy;
       if (p.x < -10) p.x = c.width + 10; if (p.x > c.width + 10) p.x = -10;
       if (p.y < -10) p.y = c.height + 10; if (p.y > c.height + 10) p.y = -10;
-      const o = 0.06 + 0.08 * Math.sin(t * p.sp * 100 + p.ph);
-      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      let o = 0.06 + 0.08 * Math.sin(t * p.sp * 100 + p.ph);
+      if (p.type === 'sparkle') {
+        o = Math.min(1, o * 2);
+      }
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r * (p.type === 'sparkle' ? 1.5 : 1), 0, Math.PI * 2);
       ctx.fillStyle = `rgba(${p.col},${o})`; ctx.fill();
     });
     af = requestAnimationFrame(draw);
@@ -959,7 +1003,7 @@ function EditPlanModal({ isOpen, onClose, plan, onSave }) {
 // ============================================================
 // OBJECTIVE CARD (GARDEN VIEW)
 // ============================================================
-function ObjectiveCard({ objective, onClick, onEdit, onDelete }) {
+function ObjectiveCard({ objective, onClick, onEdit, onDelete, index = 0 }) {
   const health = calcHealth(objective.plans);
   const onTrack = onTrackCount(objective.plans);
   const total = objective.plans.length;
@@ -978,8 +1022,8 @@ function ObjectiveCard({ objective, onClick, onEdit, onDelete }) {
       borderRadius: 'var(--radius-lg)',
       padding: '20px',
       cursor: 'pointer',
-      transition: 'all var(--transition)',
-      animation: 'fadeInUp 0.4s ease-out',
+      transition: 'all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1.0)',
+      animation: `slideUpStagger 0.5s ease-out ${index * 0.08}s both`,
       position: 'relative',
       display: 'flex',
       flexDirection: 'column',
@@ -987,15 +1031,15 @@ function ObjectiveCard({ objective, onClick, onEdit, onDelete }) {
       borderLeft: `4px solid ${borderColor}`
     }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.transform = 'translateY(-4px)';
-        e.currentTarget.style.boxShadow = 'var(--shadow-lg)';
+        e.currentTarget.style.transform = 'translateY(-3px)';
+        e.currentTarget.style.boxShadow = '0 12px 40px rgba(61,56,53,0.12)';
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.transform = 'translateY(0)';
         e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', position: 'relative' }}>
         <div style={{ flex: 1 }}>
           <h3 style={{ fontFamily: "'Instrument Serif'", fontSize: '16px', marginBottom: '4px', color: 'var(--charcoal)' }}>
             {objective.title}
@@ -1015,7 +1059,15 @@ function ObjectiveCard({ objective, onClick, onEdit, onDelete }) {
             {tractionLabel}
           </span>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', position: 'relative' }}>
+          {/* RAG dot badge top-right */}
+          <div style={{
+            position: 'absolute', top: '-8px', right: '-8px',
+            width: '12px', height: '12px', borderRadius: '50%',
+            backgroundColor: health >= 75 ? '#D4A574' : health >= 50 ? '#8A9B8E' : health >= 25 ? '#2A6B6B' : '#C07A6B',
+            border: '2px solid white',
+            zIndex: 10, animation: 'dotPulse 2s ease-in-out infinite'
+          }} />
           <svg width="56" height="56" viewBox="0 0 56 56" style={{ flexShrink: 0 }} role="img" aria-label={`${health}% health`}>
             <circle cx="28" cy="28" r="24" fill="none" stroke={healthColor(health)} strokeWidth="4" opacity="0.2" />
             <circle cx="28" cy="28" r="24" fill="none" stroke={healthColor(health)} strokeWidth="4"
@@ -1025,7 +1077,9 @@ function ObjectiveCard({ objective, onClick, onEdit, onDelete }) {
               {health}%
             </text>
           </svg>
-          <StatusIcon status={objective.plans.length > 0 ? objective.plans[0].status : STATUS.SEED} size={32} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+            {health >= 50 ? '↑' : health > 25 ? '→' : '↓'} Velocity
+          </div>
         </div>
       </div>
       <div style={{
@@ -1073,12 +1127,29 @@ function ObjectiveCard({ objective, onClick, onEdit, onDelete }) {
 // PLAN CARD (BLOOM VIEW)
 // ============================================================
 function PlanCard({ plan, objective, onEdit, onDelete, onStatusChange, onProgressChange, onAtRiskToggle, onKRToggle }) {
+  const [celebrationEmoji, setCelebrationEmoji] = useState(null);
   const statusMeta = STATUS_META[plan.status] || STATUS_META[STATUS.SEED];
   const krRatio = plan.keyResults.filter(kr => kr.completed).length;
   const krTotal = plan.keyResults.length;
   const days = daysRemaining(plan.targetDate);
   const timePercent = timeConsumedPercent(plan.startDate, plan.targetDate);
   const borderColor = getBorderColor(plan.progress, plan.atRisk);
+
+  const handleStatusChange = () => {
+    const current = plan.status;
+    let newStatus = STATUS.SEED;
+    if (current === STATUS.SEED) newStatus = STATUS.SPROUTING;
+    else if (current === STATUS.SPROUTING) newStatus = STATUS.BUDDING;
+    else if (current === STATUS.BUDDING) newStatus = STATUS.BLOOMED;
+
+    // Trigger celebration
+    if (newStatus === STATUS.SPROUTING) setCelebrationEmoji('🌿');
+    else if (newStatus === STATUS.BUDDING) setCelebrationEmoji('🌼');
+    else if (newStatus === STATUS.BLOOMED) setCelebrationEmoji('🌻');
+
+    setTimeout(() => setCelebrationEmoji(null), 1200);
+    onStatusChange();
+  };
 
   return (
     <div style={{
@@ -1099,14 +1170,24 @@ function PlanCard({ plan, objective, onEdit, onDelete, onStatusChange, onProgres
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '12px', alignItems: 'flex-start' }}>
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '12px', alignItems: 'flex-start', position: 'relative' }}>
+        {celebrationEmoji && (
+          <div style={{
+            position: 'absolute', left: '20px', top: '10px',
+            fontSize: '32px', zIndex: 10,
+            animation: 'confettiBurst 1s ease-out forwards',
+            pointerEvents: 'none'
+          }}>
+            {celebrationEmoji}
+          </div>
+        )}
         <StatusIcon status={plan.status} size={40} />
         <div style={{ flex: 1 }}>
           <h3 style={{ fontFamily: "'Instrument Serif'", fontSize: '15px', marginBottom: '4px' }}>
             {plan.title}
           </h3>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '8px', alignItems: 'center' }}>
-            <button onClick={() => onStatusChange()} style={{
+            <button onClick={handleStatusChange} style={{
               fontSize: '11px',
               backgroundColor: statusMeta.bg,
               color: statusMeta.color,
@@ -1259,8 +1340,17 @@ function PlanCard({ plan, objective, onEdit, onDelete, onStatusChange, onProgres
 // ============================================================
 function LoginPage({ onLogin }) {
   const [entering, setEntering] = useState(false);
+  const theme = localStorage.getItem('impactq_theme') || 'classic';
+
+  useEffect(() => {
+    const visited = localStorage.getItem('impactq_visited');
+    if (visited) {
+      setTimeout(() => onLogin(true), 1500);
+    }
+  }, [onLogin]);
 
   const handleEnter = () => {
+    localStorage.setItem('impactq_visited', 'true');
     setEntering(true);
     setTimeout(() => onLogin(true), 600);
   };
@@ -1291,10 +1381,13 @@ function LoginPage({ onLogin }) {
         animation: 'scaleIn 0.5s cubic-bezier(0.25, 0.1, 0.25, 1.0)',
         position: 'relative', overflow: 'hidden'
       }}>
-        {/* Subtle top accent line */}
+        {/* Themed Accent Bar */}
         <div style={{
-          position: 'absolute', top: 0, left: 0, right: 0, height: '3px',
-          background: 'linear-gradient(90deg, var(--teal), var(--sage), var(--gold))'
+          position: 'absolute', top: 0, left: 0, right: 0,
+          height: theme === 'renaissance' ? '6px' : '4px',
+          background: theme === 'renaissance'
+            ? 'linear-gradient(90deg, #6B2D3E 0%, #D4A574 40%, #C9A94E 60%, #2A6B6B 100%)'
+            : 'linear-gradient(90deg, #2A6B6B 0%, #D4A574 40%, #8A9B8E 60%, #C07A6B 100%)'
         }} />
 
         <h1 id="login-title" style={{ display: 'none' }}>ImpactQ Login</h1>
@@ -1331,7 +1424,7 @@ function LoginPage({ onLogin }) {
           </div>
         </div>
 
-        {/* Growth Stages Showcase */}
+        {/* Growth Stages Showcase with Portfolio Pulse */}
         <div style={{
           display: 'flex', justifyContent: 'center', gap: '16px',
           marginBottom: '36px', padding: '20px 0',
@@ -1346,7 +1439,7 @@ function LoginPage({ onLogin }) {
             <React.Fragment key={s.status}>
               <div style={{
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
-                animation: `petalUnfurl 0.6s ease-out ${0.2 + i * 0.15}s both`
+                animation: `petalUnfurl 0.6s ease-out ${0.2 + i * 0.15}s both, dotPulse ${2.5 + i * 0.3}s ease-in-out ${0.5 + i * 0.25}s infinite`
               }}>
                 <StatusIcon status={s.status} size={36} />
                 <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.02em' }}>{s.label}</div>
@@ -1363,23 +1456,31 @@ function LoginPage({ onLogin }) {
           onClick={handleEnter}
           style={{
             width: '100%', padding: '14px 32px',
-            background: 'linear-gradient(135deg, var(--teal) 0%, var(--teal-dark) 100%)',
+            background: theme === 'renaissance'
+              ? 'linear-gradient(135deg, #6B2D3E 0%, #4A1D2A 100%)'
+              : 'linear-gradient(135deg, var(--teal) 0%, var(--teal-dark) 100%)',
             color: 'white', border: 'none',
             borderRadius: 'var(--radius-md)',
             fontSize: '15px', fontWeight: 600,
             cursor: 'pointer',
             transition: 'all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1.0)',
             letterSpacing: '0.5px',
-            boxShadow: '0 4px 16px rgba(42,107,107,0.2)',
+            boxShadow: theme === 'renaissance'
+              ? '0 4px 16px rgba(107,45,62,0.2)'
+              : '0 4px 16px rgba(42,107,107,0.2)',
             marginBottom: '24px'
           }}
           onMouseEnter={(e) => {
             e.target.style.transform = 'translateY(-2px)';
-            e.target.style.boxShadow = '0 8px 24px rgba(42,107,107,0.3)';
+            e.target.style.boxShadow = theme === 'renaissance'
+              ? '0 8px 24px rgba(107,45,62,0.3)'
+              : '0 8px 24px rgba(42,107,107,0.3)';
           }}
           onMouseLeave={(e) => {
             e.target.style.transform = 'translateY(0)';
-            e.target.style.boxShadow = '0 4px 16px rgba(42,107,107,0.2)';
+            e.target.style.boxShadow = theme === 'renaissance'
+              ? '0 4px 16px rgba(107,45,62,0.2)'
+              : '0 4px 16px rgba(42,107,107,0.2)';
           }}
         >
           Enter Strategic Garden
@@ -1391,6 +1492,102 @@ function LoginPage({ onLogin }) {
           fontWeight: 500, letterSpacing: '0.03em', opacity: 0.7
         }}>
           Goodwill Industries of Northeast Texas
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// COMMAND PALETTE COMPONENT
+// ============================================================
+function CommandPalette({ isOpen, onClose, objectives, selectedObjective, onNavigate }) {
+  const [search, setSearch] = useState('');
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (isOpen && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isOpen]);
+
+  const allItems = [
+    { id: 'add-obj', type: 'action', label: 'Add Objective', hotkey: 'Ctrl+Shift+O', action: () => { onNavigate('add-obj'); onClose(); } },
+    { id: 'add-plan', type: 'action', label: 'Add Plan', hotkey: 'Ctrl+Shift+P', action: () => { onNavigate('add-plan'); onClose(); } },
+    { id: 'settings', type: 'action', label: 'Settings', hotkey: 'Ctrl+,', action: () => { onNavigate('settings'); onClose(); } },
+    ...objectives.map(obj => ({
+      id: `obj-${obj.id}`,
+      type: 'objective',
+      label: obj.title,
+      action: () => { onNavigate('obj', obj); onClose(); }
+    }))
+  ];
+
+  const filtered = search
+    ? allItems.filter(item => item.label.toLowerCase().includes(search.toLowerCase()))
+    : allItems.slice(0, 8);
+
+  if (!isOpen) return null;
+
+  return (
+    <div style={{
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      backdropFilter: 'blur(4px)',
+      display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+      zIndex: 2000, paddingTop: '100px',
+      animation: 'fadeIn 0.2s'
+    }} onClick={onClose}>
+      <div style={{
+        backgroundColor: 'var(--card)',
+        borderRadius: 'var(--radius-lg)',
+        border: '1px solid var(--border)',
+        boxShadow: 'var(--shadow-xl)',
+        width: '90%', maxWidth: '500px',
+        overflow: 'hidden',
+        animation: 'slideDown 0.3s ease-out'
+      }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
+          <input
+            ref={inputRef}
+            type="text"
+            placeholder="Search objectives or actions..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{
+              width: '100%', padding: '8px', fontSize: '14px',
+              border: 'none', background: 'transparent', outline: 'none',
+              fontFamily: 'inherit'
+            }}
+          />
+        </div>
+        <div style={{ maxHeight: '320px', overflow: 'auto' }}>
+          {filtered.length > 0 ? (
+            filtered.map((item, idx) => (
+              <button
+                key={item.id}
+                onClick={item.action}
+                style={{
+                  width: '100%', padding: '12px 16px', textAlign: 'left',
+                  border: 'none', background: idx % 2 === 0 ? 'transparent' : 'rgba(42,107,107,0.02)',
+                  cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  fontSize: '13px', color: 'var(--charcoal)', transition: 'background 0.1s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(42,107,107,0.08)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = idx % 2 === 0 ? 'transparent' : 'rgba(42,107,107,0.02)'}
+              >
+                <span>{item.label}</span>
+                {item.hotkey && <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{item.hotkey}</span>}
+              </button>
+            ))
+          ) : (
+            <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
+              No results found
+            </div>
+          )}
+        </div>
+        <div style={{ padding: '8px 16px', borderTop: '1px solid var(--border)', fontSize: '10px', color: 'var(--text-muted)' }}>
+          Press <kbd style={{ padding: '2px 6px', backgroundColor: 'var(--pale-bg)', borderRadius: '3px' }}>Esc</kbd> to close
         </div>
       </div>
     </div>
@@ -1489,6 +1686,20 @@ function App() {
   const [tlMonth, setTlMonth] = useState(() => { const d = new Date(); return { year: d.getFullYear(), month: d.getMonth() }; });
   const [hoveredPlan, setHoveredPlan] = useState(null);
   const [todayMarker, setTodayMarker] = useState(true);
+  const [theme, setTheme] = useState(() => localStorage.getItem('impactq_theme') || 'classic');
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
+  const [lastMetrics, setLastMetrics] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('impactq_last_metrics')) || {};
+    } catch { return {}; }
+  });
+  const [showSettings, setShowSettings] = useState(false);
+  const [orgName, setOrgName] = useState(() => localStorage.getItem('impactq_org_name') || 'Goodwill Industries of Northeast Texas');
+  const [fiscalYearStart, setFiscalYearStart] = useState(() => localStorage.getItem('impactq_fiscal_year') || '1');
+  const [healthMode, setHealthMode] = useState(() => localStorage.getItem('impactq_health_mode') || 'average');
+  const [riskThreshold, setRiskThreshold] = useState(() => parseInt(localStorage.getItem('impactq_risk_threshold') || '25'));
+  const [gardenViewMode, setGardenViewMode] = useState('grid');
+  const [keyboardHintVisible, setKeyboardHintVisible] = useState(true);
   const tlScrollRef = useRef(null);
 
   useEffect(() => {
@@ -1506,6 +1717,41 @@ function App() {
     mq.addEventListener('change', handler);
     return () => mq.removeEventListener('change', handler);
   }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setShowCommandPalette(!showCommandPalette);
+      }
+      if (e.key === 'Escape') {
+        setShowCommandPalette(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showCommandPalette]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'renaissance') {
+      root.classList.add('theme-renaissance');
+      root.classList.remove('theme-dark');
+    } else if (theme === 'dark') {
+      root.classList.add('theme-dark');
+      root.classList.remove('theme-renaissance');
+    } else {
+      root.classList.remove('theme-renaissance', 'theme-dark');
+    }
+    localStorage.setItem('impactq_theme', theme);
+  }, [theme]);
+
+  useEffect(() => {
+    if (keyboardHintVisible && !isMobile) {
+      const timer = setTimeout(() => setKeyboardHintVisible(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [keyboardHintVisible, isMobile]);
 
   const getUniqueOwners = () => {
     const owners = new Set();
@@ -1574,233 +1820,315 @@ function App() {
       <div style={{ position: 'relative', zIndex: 1 }}>
         <div style={{ paddingBottom: isMobile ? 'var(--mobile-nav)' : '40px' }}>
           <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
-            {/* Unified Garden Header with Growth Stages */}
+            {/* Animated Status Bar */}
+            {(() => {
+              const barColor = avgHealth > 70 ? 'linear-gradient(135deg, #2A6B6B 0%, #3A8B8B 100%)' : avgHealth >= 40 ? 'linear-gradient(135deg, #3A8B8B 0%, #D4A574 100%)' : 'linear-gradient(135deg, #C07A6B 0%, #D4A574 100%)';
+              return (
+                <div style={{
+                  height: '3px',
+                  background: barColor,
+                  backgroundSize: '200% 200%',
+                  animation: 'gradientFlow 3s ease infinite',
+                  borderRadius: '2px',
+                  marginBottom: '20px'
+                }} />
+              );
+            })()}
+
+            {/* Compressed Garden Header */}
             <div style={{
-              padding: '36px 32px 28px',
+              padding: '16px 20px',
               backgroundColor: 'var(--pale-green)',
               borderRadius: 'var(--radius-lg)',
               border: '1px solid rgba(138, 155, 142, 0.2)',
-              marginBottom: '28px',
+              marginBottom: '24px',
               animation: 'fadeIn 0.6s ease-out'
             }}>
-              <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+              {/* Row 1: Title + Metric Pills */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: '16px',
+                marginBottom: '12px',
+                flexWrap: 'wrap'
+              }}>
                 <h1 style={{
                   fontFamily: "'Instrument Serif'",
-                  fontSize: '36px',
-                  marginBottom: '8px',
-                  color: 'var(--charcoal)'
+                  fontSize: '24px',
+                  margin: 0,
+                  color: 'var(--charcoal)',
+                  fontWeight: 400
                 }}>
                   Strategic Garden
                 </h1>
-                <p style={{
-                  fontSize: '15px',
-                  color: 'var(--text-muted)',
-                  maxWidth: '600px',
-                  margin: '0 auto'
+                <div style={{
+                  display: 'flex',
+                  gap: '12px',
+                  flexWrap: 'wrap',
+                  justifyContent: 'flex-end'
                 }}>
-                  Watch your strategic initiatives grow from seed to bloom. Each objective card shows the health and status of your tactical plans.
-                </p>
+                  {[
+                    { value: objectives.length, icon: '🌿', label: 'Initiatives' },
+                    { value: totalPlans, icon: '📋', label: 'Plans' },
+                    { value: avgHealth + '%', icon: '💚', label: 'Health' },
+                    { value: atRiskCount, icon: '⚠️', label: 'At Risk' }
+                  ].map((m, i) => (
+                    <div key={i} style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      backgroundColor: 'var(--card)',
+                      padding: '6px 12px',
+                      borderRadius: '16px',
+                      border: '1px solid var(--border)',
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      color: 'var(--text-secondary)'
+                    }}>
+                      <span>{m.icon}</span>
+                      <span>{m.value}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              {/* Metrics Cards Row */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
-                gap: '12px',
-                marginBottom: '24px'
-              }}>
-                {[
-                  { label: 'Initiatives', value: objectives.length, color: 'var(--teal)', icon: '🌿' },
-                  { label: 'Total Plans', value: totalPlans, color: 'var(--sage-dark)', icon: '📋' },
-                  { label: 'Portfolio Health', value: avgHealth + '%', color: healthColor(avgHealth), icon: '💚' },
-                  { label: 'At Risk', value: atRiskCount, color: atRiskCount > 0 ? 'var(--amber)' : 'var(--sage)', icon: '⚠️' }
-                ].map((m, i) => (
-                  <div key={i} style={{
-                    backgroundColor: 'var(--card)',
-                    borderRadius: 'var(--radius-md)',
-                    padding: '16px',
-                    textAlign: 'center',
-                    border: '1px solid var(--border)',
-                    animation: `fadeIn 0.4s ease-out ${i * 0.06}s both`
-                  }}>
-                    <div style={{ fontSize: '20px', marginBottom: '4px' }}>{m.icon}</div>
-                    <div style={{ fontSize: '24px', fontWeight: 700, color: m.color, lineHeight: 1.2 }}>{m.value}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500, marginTop: '4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{m.label}</div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Interactive Growth Stages Row */}
+              {/* Row 2: Growth Stage Chips + Quote Icon + Action Buttons */}
               <div style={{
                 display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'flex-start',
-                gap: isMobile ? '8px' : '32px',
+                alignItems: 'center',
+                gap: '12px',
                 flexWrap: 'wrap',
-                marginBottom: '24px'
+                justifyContent: 'space-between'
               }}>
-                {growthStages.map((s, i) => {
-                  const count = stageCounts[s.status] || 0;
-                  const isActive = gardenFilter === s.status;
-                  return (
-                    <React.Fragment key={s.status}>
+                <div style={{
+                  display: 'flex',
+                  gap: '8px',
+                  flexWrap: 'wrap'
+                }}>
+                  {growthStages.map((s, i) => {
+                    const count = stageCounts[s.status] || 0;
+                    const isActive = gardenFilter === s.status;
+                    const stageEmojis = { [STATUS.SEED]: '🌱', [STATUS.SPROUTING]: '🌿', [STATUS.BUDDING]: '🌼', [STATUS.BLOOMED]: '🌻' };
+                    return (
                       <button
+                        key={s.status}
                         onClick={() => setGardenFilter(isActive ? '' : s.status)}
                         style={{
-                          display: 'flex',
-                          flexDirection: 'column',
+                          display: 'inline-flex',
                           alignItems: 'center',
-                          background: isActive ? 'rgba(42,107,107,0.08)' : 'none',
-                          border: isActive ? '2px solid var(--teal)' : '2px solid transparent',
-                          borderRadius: 'var(--radius-md)',
-                          padding: '10px 16px',
+                          gap: '4px',
+                          padding: '6px 10px',
+                          fontSize: '12px',
+                          fontWeight: 500,
+                          backgroundColor: isActive ? 'rgba(42,107,107,0.12)' : 'var(--card)',
+                          border: isActive ? '1px solid var(--teal)' : '1px solid var(--border)',
+                          borderRadius: '14px',
                           cursor: 'pointer',
                           transition: 'all var(--transition)',
-                          animation: `slideIn 0.4s ease-out ${i * 0.08}s both`
+                          color: isActive ? 'var(--teal)' : 'var(--charcoal)'
                         }}
                       >
-                        <div style={{ marginBottom: '6px' }}>
-                          <StatusIcon status={s.status} size={44} />
-                        </div>
-                        <div style={{ fontWeight: 600, fontSize: '13px', color: isActive ? 'var(--teal)' : 'var(--charcoal)' }}>
-                          {s.label}
-                        </div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                          {count} plan{count !== 1 ? 's' : ''}
-                        </div>
+                        <span style={{ fontSize: '14px' }}>{stageEmojis[s.status]}</span>
+                        <span>{count}</span>
                       </button>
-                      {i < growthStages.length - 1 && !isMobile && (
-                        <span style={{ color: 'var(--text-muted)', fontSize: '18px', alignSelf: 'center', marginTop: '-8px' }}>→</span>
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-                {gardenFilter && (
-                  <button onClick={() => setGardenFilter('')} style={{
-                    alignSelf: 'center', background: 'none', border: 'none', color: 'var(--teal)',
-                    fontSize: '12px', cursor: 'pointer', fontWeight: 500, textDecoration: 'underline'
-                  }}>Clear filter</button>
+                    );
+                  })}
+                </div>
+
+                {/* Quote Icon + View Toggle + Action Buttons */}
+                <div style={{
+                  display: 'flex',
+                  gap: '8px',
+                  alignItems: 'center'
+                }}>
+                  {/* Quote Hover */}
+                  <div style={{
+                    position: 'relative',
+                    cursor: 'pointer'
+                  }}>
+                    <span style={{
+                      fontSize: '16px',
+                      display: 'inline-block',
+                      width: '28px',
+                      height: '28px',
+                      lineHeight: '28px',
+                      textAlign: 'center'
+                    }}>📜</span>
+                  </div>
+
+                  {/* View Toggle */}
+                  <div style={{
+                    display: 'flex',
+                    gap: '2px',
+                    backgroundColor: 'var(--card)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '4px',
+                    padding: '2px'
+                  }}>
+                    {['grid', 'list'].map((mode) => (
+                      <button
+                        key={mode}
+                        onClick={() => setGardenViewMode(mode)}
+                        style={{
+                          padding: '4px 8px',
+                          fontSize: '12px',
+                          fontWeight: 500,
+                          background: gardenViewMode === mode ? 'rgba(42,107,107,0.12)' : 'transparent',
+                          border: 'none',
+                          borderRadius: '3px',
+                          cursor: 'pointer',
+                          color: gardenViewMode === mode ? 'var(--teal)' : 'var(--text-muted)',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        {mode === 'grid' ? '☷' : '≡'}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Action Buttons */}
+                  <button onClick={() => setShowAddObjective(true)} style={{
+                    padding: '6px 12px', fontSize: '12px', border: 'none',
+                    background: 'var(--teal)', color: 'white', borderRadius: '4px',
+                    cursor: 'pointer', fontWeight: 500, transition: 'all var(--transition)'
+                  }}>+ Add</button>
+                </div>
+              </div>
+            </div>
+
+            {/* Grid or List View */}
+            {gardenViewMode === 'grid' ? (
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(320px, 1fr))',
+                gap: '16px',
+                marginBottom: '32px'
+              }}>
+                {filteredObjectives.map((obj, idx) => (
+                  <ObjectiveCard
+                    key={obj.id}
+                    objective={obj}
+                    index={idx}
+                    onClick={() => {
+                      setSelectedObjective(obj);
+                      setCurrentView('bloom');
+                    }}
+                    onEdit={() => {
+                      setEditingObjective(obj);
+                    }}
+                    onDelete={() => {
+                      setObjectives(objectives.filter(o => o.id !== obj.id));
+                    }}
+                  />
+                ))}
+                {gardenFilter && filteredObjectives.length === 0 && (
+                  <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                    <p style={{ fontSize: '15px', marginBottom: '8px' }}>No initiatives match this filter.</p>
+                    <button onClick={() => setGardenFilter('')} style={{
+                      background: 'none', border: 'none', color: 'var(--teal)', cursor: 'pointer', fontWeight: 500, fontSize: '14px'
+                    }}>Show all initiatives</button>
+                  </div>
                 )}
               </div>
-
-              {/* Daily Wisdom Quote — between bloom icons and action buttons */}
-              {(() => {
-                const quotes = [
-                  { text: "The creation of a thousand forests is in one acorn.", author: "Ralph Waldo Emerson" },
-                  { text: "Change is the law of life. And those who look only to the past or present are certain to miss the future.", author: "John F. Kennedy" },
-                  { text: "A goal without a plan is just a wish.", author: "Antoine de Saint-Exupéry" },
-                  { text: "In the middle of difficulty lies opportunity.", author: "Albert Einstein" },
-                  { text: "The best time to plant a tree was twenty years ago. The second best time is now.", author: "Chinese Proverb" },
-                  { text: "Plans are nothing; planning is everything.", author: "Dwight D. Eisenhower" },
-                  { text: "What we plant in the soil of contemplation, we shall reap in the harvest of action.", author: "Meister Eckhart" },
-                  { text: "Progress is impossible without change, and those who cannot change their minds cannot change anything.", author: "George Bernard Shaw" },
-                  { text: "Even the smallest seed holds the promise of an entire forest.", author: "Matshona Dhliwayo" },
-                  { text: "By failing to prepare, you are preparing to fail.", author: "Benjamin Franklin" },
-                  { text: "Adopt the pace of nature: her secret is patience.", author: "Ralph Waldo Emerson" },
-                  { text: "Strategy is about making choices, trade-offs; it is about deliberately choosing to be different.", author: "Michael Porter" },
-                  { text: "A flower does not think of competing with the flower next to it. It just blooms.", author: "Zen Shin" },
-                  { text: "The secret of change is to focus all your energy not on fighting the old, but on building the new.", author: "Socrates" },
-                  { text: "He who plants a garden, plants happiness.", author: "Chinese Proverb" },
-                  { text: "Vision without execution is hallucination.", author: "Thomas Edison" },
-                  { text: "All growth depends upon activity. There is no development physically or intellectually without effort.", author: "Calvin Coolidge" },
-                  { text: "Do not judge each day by the harvest you reap but by the seeds that you plant.", author: "Robert Louis Stevenson" },
-                  { text: "The measure of intelligence is the ability to change.", author: "Albert Einstein" },
-                  { text: "To plant a garden is to believe in tomorrow.", author: "Audrey Hepburn" },
-                  { text: "Good business leaders create a vision, articulate the vision, passionately own the vision, and relentlessly drive it to completion.", author: "Jack Welch" },
-                  { text: "Where flowers bloom, so does hope.", author: "Lady Bird Johnson" },
-                  { text: "It is not the strongest species that survive, nor the most intelligent, but the one most responsive to change.", author: "Charles Darwin" },
-                  { text: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
-                  { text: "From a small seed a mighty trunk may grow.", author: "Aeschylus" },
-                  { text: "Success is the sum of small efforts, repeated day in and day out.", author: "Robert Collier" },
-                  { text: "Bloom where you are planted.", author: "Bishop of Geneva" },
-                  { text: "What is not started today is never finished tomorrow.", author: "Johann Wolfgang von Goethe" },
-                  { text: "The earth laughs in flowers.", author: "Ralph Waldo Emerson" },
-                  { text: "Every accomplishment starts with the decision to try.", author: "John F. Kennedy" },
-                  { text: "Like wildflowers, you must allow yourself to grow in all the places people thought you never would.", author: "E.V." },
-                ];
-                const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
-                const quote = quotes[dayOfYear % quotes.length];
-                return (
-                  <div style={{
-                    margin: '4px auto 20px',
-                    textAlign: 'center',
-                    maxWidth: '560px'
-                  }}>
-                    <p style={{
-                      fontFamily: "'Instrument Serif'",
-                      fontSize: '15px',
-                      fontStyle: 'italic',
-                      color: 'var(--charcoal)',
-                      lineHeight: 1.6,
-                      margin: '0 0 4px',
-                      opacity: 0.8
-                    }}>
-                      "{quote.text}"
-                    </p>
-                    <span style={{
-                      fontSize: '11px',
-                      color: 'var(--text-muted)',
-                      fontWeight: 500,
-                      letterSpacing: '0.02em'
-                    }}>
-                      — {quote.author}
-                    </span>
-                  </div>
-                );
-              })()}
-
-              {/* Action Buttons */}
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-                <button onClick={() => setShowAddObjective(true)} style={{
-                  padding: '10px 20px', fontSize: '13px', border: 'none',
-                  background: 'var(--teal)', color: 'white', borderRadius: 'var(--radius-md)',
-                  cursor: 'pointer', fontWeight: 500, transition: 'all var(--transition)'
-                }}>+ Add Objective</button>
-                <button onClick={() => {
-                  const input = document.createElement('input');
-                  input.type = 'file';
-                  input.accept = '.json';
-                  input.click();
-                }} style={{
-                  padding: '10px 20px', fontSize: '13px',
-                  border: '1px solid var(--border)',
-                  background: 'var(--card)', color: 'var(--text-secondary)', borderRadius: 'var(--radius-md)',
-                  cursor: 'pointer', fontWeight: 500, transition: 'all var(--transition)'
-                }}>+ Create a New Plan</button>
-              </div>
-            </div>
-
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(320px, 1fr))',
-              gap: '16px',
-              marginBottom: '32px'
-            }}>
-              {filteredObjectives.map(obj => (
-                <ObjectiveCard
-                  key={obj.id}
-                  objective={obj}
-                  onClick={() => {
-                    setSelectedObjective(obj);
-                    setCurrentView('bloom');
-                  }}
-                  onEdit={() => {
-                    setEditingObjective(obj);
-                  }}
-                  onDelete={() => {
-                    setObjectives(objectives.filter(o => o.id !== obj.id));
-                  }}
-                />
-              ))}
-              {gardenFilter && filteredObjectives.length === 0 && (
-                <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-                  <p style={{ fontSize: '15px', marginBottom: '8px' }}>No initiatives match this filter.</p>
-                  <button onClick={() => setGardenFilter('')} style={{
-                    background: 'none', border: 'none', color: 'var(--teal)', cursor: 'pointer', fontWeight: 500, fontSize: '14px'
-                  }}>Show all initiatives</button>
+            ) : (
+              /* List View */
+              <div style={{
+                backgroundColor: 'var(--card)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-lg)',
+                overflow: 'hidden',
+                marginBottom: '32px'
+              }}>
+                {/* Table Header */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '2fr 1fr 1fr 1fr 1.5fr',
+                  gap: '16px',
+                  padding: '16px',
+                  backgroundColor: 'var(--pale-bg)',
+                  borderBottom: '1px solid var(--border)',
+                  fontWeight: 600,
+                  fontSize: '12px',
+                  color: 'var(--text-muted)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em'
+                }}>
+                  <div>Objective</div>
+                  <div>Plans</div>
+                  <div>Health</div>
+                  <div>At Risk</div>
+                  <div>Stage Distribution</div>
                 </div>
-              )}
-            </div>
+
+                {/* Table Rows */}
+                {filteredObjectives.length > 0 ? (
+                  filteredObjectives.map((obj, idx) => {
+                    const health = calcHealth(obj.plans);
+                    const atRiskCount = obj.plans.filter(p => p.atRisk).length;
+                    const stageCounts = {};
+                    obj.plans.forEach(p => { stageCounts[p.status] = (stageCounts[p.status] || 0) + 1; });
+                    return (
+                      <div key={obj.id} style={{
+                        display: 'grid',
+                        gridTemplateColumns: '2fr 1fr 1fr 1fr 1.5fr',
+                        gap: '16px',
+                        padding: '16px',
+                        borderBottom: idx < filteredObjectives.length - 1 ? '1px solid var(--border)' : 'none',
+                        alignItems: 'center',
+                        cursor: 'pointer',
+                        transition: 'all var(--transition)',
+                        backgroundColor: 'transparent'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(42,107,107,0.04)'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      onClick={() => {
+                        setSelectedObjective(obj);
+                        setCurrentView('bloom');
+                      }}>
+                        <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--charcoal)' }}>
+                          {obj.title}
+                        </div>
+                        <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                          {obj.plans.length}
+                        </div>
+                        <div style={{ fontSize: '13px', fontWeight: 600, color: healthColor(health) }}>
+                          {health}%
+                        </div>
+                        <div style={{ fontSize: '13px', color: atRiskCount > 0 ? 'var(--amber)' : 'var(--sage)' }}>
+                          {atRiskCount}
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', fontSize: '12px' }}>
+                          {[
+                            { emoji: '🌱', count: stageCounts[STATUS.SEED] || 0 },
+                            { emoji: '🌿', count: stageCounts[STATUS.SPROUTING] || 0 },
+                            { emoji: '🌼', count: stageCounts[STATUS.BUDDING] || 0 },
+                            { emoji: '🌻', count: stageCounts[STATUS.BLOOMED] || 0 }
+                          ].map((s) => (
+                            <span key={s.emoji} style={{ color: 'var(--text-muted)' }}>
+                              {s.emoji} {s.count}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)', gridColumn: '1 / -1' }}>
+                    {gardenFilter ? (
+                      <>
+                        <p style={{ fontSize: '15px', marginBottom: '8px' }}>No initiatives match this filter.</p>
+                        <button onClick={() => setGardenFilter('')} style={{
+                          background: 'none', border: 'none', color: 'var(--teal)', cursor: 'pointer', fontWeight: 500, fontSize: '14px'
+                        }}>Show all initiatives</button>
+                      </>
+                    ) : (
+                      <p>No initiatives yet. Create one to get started!</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
           </div>
         </div>
@@ -2491,6 +2819,194 @@ function App() {
   }
 
   // ============================================================
+  // RENDER SETTINGS VIEW
+  // ============================================================
+  function renderSettingsView() {
+    const handleExportData = () => {
+      const data = { objectives, version: APP_VERSION, exportedAt: new Date().toISOString() };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `impactq-backup-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+
+    return (
+      <div style={{ position: 'relative', zIndex: 1, paddingBottom: isMobile ? 'var(--mobile-nav)' : '40px' }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
+          <button onClick={() => setShowSettings(false)} style={{
+            background: 'none', border: 'none', color: 'var(--teal)',
+            fontSize: '14px', cursor: 'pointer', padding: '8px 0',
+            marginBottom: '20px', fontWeight: 500
+          }}>← Back</button>
+
+          <div style={{
+            backgroundColor: 'var(--card)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '32px',
+            animation: 'fadeInUp 0.4s ease-out'
+          }}>
+            <h1 style={{ fontFamily: "'Instrument Serif'", fontSize: '28px', marginBottom: '24px', color: 'var(--charcoal)' }}>Settings</h1>
+
+            {/* Organization Name */}
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
+                Organization Name
+              </label>
+              <input
+                type="text"
+                value={orgName}
+                onChange={(e) => {
+                  setOrgName(e.target.value);
+                  localStorage.setItem('impactq_org_name', e.target.value);
+                }}
+                style={{
+                  width: '100%', padding: '10px', border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-md)', fontFamily: 'inherit', fontSize: '14px',
+                  backgroundColor: 'var(--surface)'
+                }}
+              />
+            </div>
+
+            {/* Fiscal Year Start */}
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
+                Fiscal Year Starts
+              </label>
+              <select
+                value={fiscalYearStart}
+                onChange={(e) => {
+                  setFiscalYearStart(e.target.value);
+                  localStorage.setItem('impactq_fiscal_year', e.target.value);
+                }}
+                style={{
+                  width: '100%', padding: '10px', border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-md)', fontFamily: 'inherit', fontSize: '14px',
+                  backgroundColor: 'var(--surface)', cursor: 'pointer'
+                }}
+              >
+                {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map((m, i) => (
+                  <option key={i} value={i + 1}>{m}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Theme Selection */}
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
+                Theme
+              </label>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                {[
+                  { id: 'classic', label: 'Classic Garden', desc: 'Original sage and teal', colors: ['#2A6B6B', '#8A9B8E', '#D4A574', '#C07A6B', '#FAFAF7'] },
+                  { id: 'renaissance', label: 'Renaissance Goodwill', desc: 'Burgundy and antique gold', colors: ['#6B2D3E', '#C9A94E', '#1E5252', '#5C3D2E', '#F5F0E8'] },
+                  { id: 'dark', label: 'Dark Garden', desc: 'Dark mode', colors: ['#1A1D1A', '#2A6B6B', '#D4A574', '#E8E5DC', '#242824'] }
+                ].map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => setTheme(t.id)}
+                    style={{
+                      padding: '12px 16px', border: theme === t.id ? '2px solid var(--teal)' : '1px solid var(--border)',
+                      borderRadius: 'var(--radius-md)', background: theme === t.id ? 'rgba(42,107,107,0.08)' : 'transparent',
+                      cursor: 'pointer', fontSize: '13px', fontWeight: 500, color: 'var(--charcoal)',
+                      transition: 'all var(--transition)', display: 'flex', flexDirection: 'column', gap: '8px'
+                    }}
+                  >
+                    <div>{t.label}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{t.desc}</div>
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      {t.colors.map((color, i) => (
+                        <div key={i} style={{
+                          width: '10px',
+                          height: '10px',
+                          borderRadius: '2px',
+                          backgroundColor: color,
+                          border: '1px solid rgba(0,0,0,0.1)'
+                        }} />
+                      ))}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Health Calculation */}
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
+                Health Calculation
+              </label>
+              <select
+                value={healthMode}
+                onChange={(e) => {
+                  setHealthMode(e.target.value);
+                  localStorage.setItem('impactq_health_mode', e.target.value);
+                }}
+                style={{
+                  width: '100%', padding: '10px', border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-md)', fontFamily: 'inherit', fontSize: '14px',
+                  backgroundColor: 'var(--surface)', cursor: 'pointer'
+                }}
+              >
+                <option value="average">Average of all plans</option>
+                <option value="weighted">Weighted by plan count</option>
+              </select>
+            </div>
+
+            {/* Risk Threshold */}
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
+                Risk Threshold: {riskThreshold}%
+              </label>
+              <input
+                type="range"
+                min="5"
+                max="75"
+                value={riskThreshold}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  setRiskThreshold(val);
+                  localStorage.setItem('impactq_risk_threshold', val.toString());
+                }}
+                style={{
+                  width: '100%', cursor: 'pointer'
+                }}
+              />
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                Plans below {riskThreshold}% progress are flagged as at-risk.
+              </p>
+            </div>
+
+            {/* Data Actions */}
+            <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid var(--border)' }}>
+              <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px', color: 'var(--charcoal)' }}>Data Management</h3>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                <button onClick={handleExportData} style={{
+                  padding: '10px 16px', borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--border)', background: 'var(--card)',
+                  color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '13px', fontWeight: 500
+                }}>📥 Export Data</button>
+                <button style={{
+                  padding: '10px 16px', borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--border)', background: 'var(--card)',
+                  color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '13px', fontWeight: 500
+                }}>📤 Import Data</button>
+              </div>
+            </div>
+
+            {/* App Version */}
+            <div style={{ marginTop: '24px', padding: '12px', backgroundColor: 'var(--pale-bg)', borderRadius: 'var(--radius-md)', fontSize: '12px', color: 'var(--text-muted)' }}>
+              ImpactQ {APP_VERSION} · Strategic Impact Visualization
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================================
   // RENDER TIMELINE VIEW (Gantt-style calendar)
   // ============================================================
   function renderTimelineView() {
@@ -3146,7 +3662,49 @@ function App() {
           </svg>
           Present
         </button>
+        <button
+          onClick={() => setShowSettings(true)}
+          title="Settings"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '8px 16px',
+            borderRadius: 'var(--radius-md)',
+            border: '1px solid var(--border)',
+            backgroundColor: 'transparent',
+            color: 'var(--text-secondary)',
+            cursor: 'pointer',
+            fontSize: '13px',
+            fontWeight: 500,
+            transition: 'all var(--transition)'
+          }}
+        >
+          ⚙️ Settings
+        </button>
       </nav>
+      {/* Animated Status Bar */}
+      {(() => {
+        const allPlansFlat = objectives.flatMap(o => o.plans);
+        const avgHealth = objectives.length > 0 ? Math.round(objectives.reduce((s, o) => s + calcHealth(o.plans), 0) / objectives.length) : 0;
+        const barColor = avgHealth > 70 ? 'linear-gradient(135deg, #2A6B6B 0%, #3A8B8B 100%)' : avgHealth >= 40 ? 'linear-gradient(135deg, #3A8B8B 0%, #D4A574 100%)' : 'linear-gradient(135deg, #C07A6B 0%, #D4A574 100%)';
+        return (
+          <div style={{
+            position: 'fixed',
+            top: isMobile ? undefined : 'var(--nav-height)',
+            bottom: isMobile ? 'var(--mobile-nav)' : undefined,
+            left: 0,
+            right: 0,
+            height: '3px',
+            background: barColor,
+            backgroundSize: '200% 200%',
+            animation: 'gradientFlow 3s ease infinite',
+            zIndex: 99,
+            display: isMobile ? 'none' : 'block'
+          }} />
+        );
+      })()}
+    </>
     );
   }
 
@@ -3174,30 +3732,59 @@ function App() {
           { id: 'present', label: 'Present', icon: '✿' },
           { id: 'garden', label: 'Garden', icon: '🌳' },
           { id: 'timeline', label: 'Timeline', icon: '📅' },
-          { id: 'bloom', label: 'Bloom', icon: '🌻' }
-        ].map(t => (
-          <button key={t.id} onClick={() => {
-            setCurrentView(t.id);
-            if (t.id !== 'bloom') setSelectedObjective(null);
-          }} style={{
-            flex: 1,
-            background: 'none',
-            border: 'none',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '4px',
-            color: currentView === t.id ? 'var(--teal)' : 'var(--text-muted)',
-            fontSize: '12px',
-            cursor: 'pointer',
-            padding: '8px',
-            transition: 'color var(--transition)'
-          }}>
-            <span style={{ fontSize: '20px' }}>{t.icon}</span>
-            <span>{t.label}</span>
-          </button>
-        ))}
+          { id: 'bloom', label: 'Bloom', icon: '🌻' },
+          { id: 'settings', label: 'Settings', icon: '⚙️' }
+        ].map(t => {
+          let badge = null;
+          if (t.id === 'garden') {
+            badge = objectives.length;
+          } else if (t.id === 'bloom') {
+            const allPlans = objectives.flatMap(o => o.plans);
+            badge = allPlans.filter(p => p.atRisk).length;
+          }
+          return (
+            <button key={t.id} onClick={() => {
+              if (t.id === 'settings') {
+                setShowSettings(true);
+              } else {
+                setShowSettings(false);
+                setCurrentView(t.id);
+                if (t.id !== 'bloom') setSelectedObjective(null);
+              }
+            }} style={{
+              flex: 1,
+              background: 'none',
+              border: 'none',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '4px',
+              color: (t.id === 'settings' ? showSettings : currentView === t.id) ? 'var(--teal)' : 'var(--text-muted)',
+              fontSize: '12px',
+              cursor: 'pointer',
+              padding: '8px',
+              transition: 'color var(--transition)',
+              position: 'relative'
+            }}>
+              <span style={{ fontSize: '20px', position: 'relative' }}>
+                {t.icon}
+                {badge > 0 && (
+                  <span style={{
+                    position: 'absolute', top: '-4px', right: '-6px',
+                    width: '16px', height: '16px', borderRadius: '50%',
+                    backgroundColor: 'var(--amber)', color: 'white',
+                    fontSize: '10px', fontWeight: 600,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                    {badge}
+                  </span>
+                )}
+              </span>
+              <span>{t.label}</span>
+            </button>
+          );
+        })}
       </div>
     );
   }
@@ -3205,7 +3792,9 @@ function App() {
   // ============================================================
   // RENDER
   // ============================================================
-  const currentContent = selectedObjective && currentView === 'bloom'
+  const currentContent = showSettings
+    ? renderSettingsView()
+    : selectedObjective && currentView === 'bloom'
     ? renderBloomView()
     : currentView === 'present'
       ? renderPresentView()
@@ -3233,6 +3822,19 @@ function App() {
         {currentContent}
       </main>
       {renderMobileNav()}
+
+      <CommandPalette
+        isOpen={showCommandPalette}
+        onClose={() => setShowCommandPalette(false)}
+        objectives={objectives}
+        selectedObjective={selectedObjective}
+        onNavigate={(action, obj) => {
+          if (action === 'add-obj') setShowAddObjective(true);
+          else if (action === 'add-plan') setShowAddPlan(true);
+          else if (action === 'settings') setShowSettings(true);
+          else if (action === 'obj') setSelectedObjective(obj);
+        }}
+      />
 
       <AddObjectiveModal
         isOpen={showAddObjective}
@@ -3357,6 +3959,37 @@ function App() {
           The app will parse headers, numbered lists, and bullet points to extract objectives and tactical plans.
         </p>
       </Modal>
+
+      {/* Keyboard Hint Chip */}
+      {keyboardHintVisible && !isMobile && (
+        <div style={{
+          position: 'fixed',
+          bottom: '24px',
+          right: '24px',
+          zIndex: 999,
+          animation: 'slideIn 0.4s ease-out, fadeIn 0s 5s forwards'
+        }}>
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '8px 14px',
+            borderRadius: '20px',
+            fontSize: '10px',
+            fontWeight: 500,
+            backgroundColor: 'rgba(255,255,255,0.75)',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(0,0,0,0.08)',
+            color: 'var(--text-secondary)',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
+          }}>
+            <kbd style={{ padding: '2px 4px', backgroundColor: 'rgba(0,0,0,0.05)', borderRadius: '2px', fontSize: '9px' }}>
+              {navigator.platform.toLowerCase().includes('mac') ? '⌘' : 'Ctrl'}+K
+            </kbd>
+            <span>to search</span>
+          </div>
+        </div>
+      )}
     </div>
       )}
     </>
