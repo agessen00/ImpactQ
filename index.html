@@ -1340,34 +1340,20 @@ function PlanCard({ plan, objective, onEdit, onDelete, onStatusChange, onProgres
 // ============================================================
 function LoginPage({ onLogin }) {
   const [entering, setEntering] = useState(false);
-  const [splashPhase, setSplashPhase] = useState('splash'); // 'splash' → 'login'
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(true);
-  const [showPassword, setShowPassword] = useState(false);
   const theme = localStorage.getItem('impactq_theme') || 'classic';
-  const orgName = localStorage.getItem('impactq_org_name') || 'Goodwill Industries of Northeast Texas';
 
-  // Premium auto-splash: brand reveal → fade to login form
   useEffect(() => {
-    const timer = setTimeout(() => setSplashPhase('login'), 2200);
-    return () => clearTimeout(timer);
-  }, []);
+    const visited = localStorage.getItem('impactq_visited');
+    if (visited) {
+      setTimeout(() => onLogin(true), 1500);
+    }
+  }, [onLogin]);
 
   const handleEnter = () => {
-    setEntering(true);
     localStorage.setItem('impactq_visited', 'true');
+    setEntering(true);
     setTimeout(() => onLogin(true), 600);
   };
-
-  const isRen = theme === 'renaissance';
-  const accentGrad = isRen
-    ? 'linear-gradient(90deg, #6B2D3E 0%, #C9A94E 35%, #D4A574 60%, #1E5252 100%)'
-    : 'linear-gradient(90deg, #2A6B6B 0%, #8A9B8E 30%, #D4A574 60%, #C07A6B 100%)';
-  const btnGrad = isRen
-    ? 'linear-gradient(135deg, #6B2D3E 0%, #4A1D2A 100%)'
-    : 'linear-gradient(135deg, var(--teal) 0%, var(--teal-dark) 100%)';
-  const btnShadow = isRen ? 'rgba(107,45,62,0.25)' : 'rgba(42,107,107,0.25)';
 
   return (
     <div role="dialog" aria-modal="true" aria-labelledby="login-title" style={{
@@ -1375,249 +1361,137 @@ function LoginPage({ onLogin }) {
       background: 'var(--surface)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       zIndex: 9999,
+      animation: 'fadeIn 0.6s ease-out',
       opacity: entering ? 0 : 1,
-      transform: entering ? 'scale(1.03)' : 'scale(1)',
-      transition: 'opacity 0.6s ease, transform 0.6s ease'
+      transform: entering ? 'scale(1.02)' : 'scale(1)',
+      transition: 'opacity 0.5s ease, transform 0.5s ease'
     }}>
       <canvas id="particle-canvas-login" aria-hidden="true" style={{
         position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
         zIndex: -1, pointerEvents: 'none'
       }} />
 
-      {/* PHASE 1: Brand Splash */}
-      <div style={{
-        position: 'absolute',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        opacity: splashPhase === 'splash' ? 1 : 0,
-        transform: splashPhase === 'splash' ? 'scale(1)' : 'scale(0.92)',
-        transition: 'opacity 0.8s ease, transform 0.8s ease',
-        pointerEvents: splashPhase === 'splash' ? 'auto' : 'none',
-        zIndex: 2
-      }}>
-        <div style={{
-          width: '96px', height: '96px', borderRadius: '28px',
-          background: btnGrad,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: `0 16px 48px ${btnShadow}, 0 0 0 1px rgba(255,255,255,0.1) inset`,
-          animation: 'seedPulse 3s ease-in-out infinite',
-          marginBottom: '28px'
-        }}>
-          <span style={{ fontSize: '44px', color: 'white', fontFamily: "'Instrument Serif'", fontWeight: 400 }}>Q</span>
-        </div>
-        <div style={{
-          fontFamily: "'Instrument Serif'", fontSize: '42px', fontWeight: 400,
-          color: 'var(--charcoal)', letterSpacing: '1px', marginBottom: '8px',
-          animation: 'fadeIn 0.8s ease-out 0.3s both'
-        }}>ImpactQ</div>
-        <div style={{
-          fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)',
-          letterSpacing: '3px', textTransform: 'uppercase',
-          animation: 'fadeIn 0.8s ease-out 0.6s both'
-        }}>{APP_VERSION} · Strategic Impact</div>
-        <div style={{
-          display: 'flex', gap: '20px', marginTop: '32px',
-          animation: 'fadeIn 0.8s ease-out 0.9s both'
-        }}>
-          {[STATUS.SEED, STATUS.SPROUTING, STATUS.BUDDING, STATUS.BLOOMED].map((s, i) => (
-            <div key={s} style={{
-              animation: `petalUnfurl 0.5s ease-out ${1.0 + i * 0.12}s both, dotPulse ${2.5 + i * 0.3}s ease-in-out ${1.5 + i * 0.2}s infinite`
-            }}>
-              <StatusIcon status={s} size={32} />
-            </div>
-          ))}
-        </div>
-        <div style={{
-          width: '120px', height: '3px', borderRadius: '2px', overflow: 'hidden',
-          marginTop: '28px', background: 'var(--border)',
-          animation: 'fadeIn 0.6s ease-out 1.2s both'
-        }}>
-          <div style={{
-            height: '100%', borderRadius: '2px',
-            background: accentGrad,
-            animation: 'shimmer 1.8s ease-in-out infinite',
-            backgroundSize: '200% 100%'
-          }} />
-        </div>
-      </div>
-
-      {/* PHASE 2: Login Form */}
       <div style={{
         background: 'var(--card)',
-        padding: '48px 40px 36px',
+        padding: '56px 44px',
         borderRadius: 'var(--radius-xl)',
-        boxShadow: `0 24px 64px rgba(61,56,53,0.14), 0 1px 3px rgba(61,56,53,0.06), 0 0 0 1px rgba(0,0,0,0.03)`,
-        maxWidth: '420px', width: '90%',
-        position: 'relative', overflow: 'hidden',
-        opacity: splashPhase === 'login' ? 1 : 0,
-        transform: splashPhase === 'login' ? 'translateY(0)' : 'translateY(16px)',
-        transition: 'opacity 0.7s ease 0.1s, transform 0.7s ease 0.1s',
-        zIndex: 1
+        boxShadow: '0 20px 60px rgba(61,56,53,0.12), 0 1px 3px rgba(61,56,53,0.06)',
+        maxWidth: '440px', width: '90%',
+        textAlign: 'center',
+        animation: 'scaleIn 0.5s cubic-bezier(0.25, 0.1, 0.25, 1.0)',
+        position: 'relative', overflow: 'hidden'
       }}>
-        {/* Top accent gradient bar */}
+        {/* Themed Accent Bar */}
         <div style={{
           position: 'absolute', top: 0, left: 0, right: 0,
-          height: isRen ? '5px' : '4px',
-          background: accentGrad
+          height: theme === 'renaissance' ? '6px' : '4px',
+          background: theme === 'renaissance'
+            ? 'linear-gradient(90deg, #6B2D3E 0%, #D4A574 40%, #C9A94E 60%, #2A6B6B 100%)'
+            : 'linear-gradient(90deg, #2A6B6B 0%, #D4A574 40%, #8A9B8E 60%, #C07A6B 100%)'
         }} />
 
         <h1 id="login-title" style={{ display: 'none' }}>ImpactQ Login</h1>
 
-        {/* Compact Logo + Title */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '28px' }}>
+        {/* Logo Mark */}
+        <div style={{ marginBottom: '32px' }}>
           <div style={{
-            width: '52px', height: '52px', borderRadius: '16px', flexShrink: 0,
-            background: btnGrad,
+            width: '72px', height: '72px', borderRadius: '20px',
+            background: 'linear-gradient(135deg, var(--teal) 0%, var(--teal-dark) 100%)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: `0 6px 20px ${btnShadow}`
+            margin: '0 auto 20px',
+            boxShadow: '0 8px 24px rgba(42,107,107,0.25)',
+            animation: 'seedPulse 4s ease-in-out infinite'
           }}>
-            <span style={{ fontSize: '24px', color: 'white', fontFamily: "'Instrument Serif'" }}>Q</span>
+            <span style={{
+              fontSize: '32px', color: 'white',
+              fontFamily: "'Instrument Serif'", fontWeight: 400
+            }}>Q</span>
           </div>
-          <div>
-            <div style={{ fontFamily: "'Instrument Serif'", fontSize: '26px', color: 'var(--charcoal)', lineHeight: 1.1 }}>ImpactQ</div>
-            <div style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '1.5px', textTransform: 'uppercase', marginTop: '2px' }}>Strategic Impact Platform</div>
-          </div>
-        </div>
-
-        {/* Welcome Text */}
-        <div style={{ marginBottom: '24px' }}>
-          <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--charcoal)', marginBottom: '4px' }}>Welcome back</div>
-          <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Sign in to your strategic garden</div>
-        </div>
-
-        {/* Email Field */}
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '6px' }}>Email</label>
-          <div style={{ position: 'relative' }}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--text-muted)" strokeWidth="1.5" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }}>
-              <rect x="1" y="3" width="14" height="10" rx="2"/><path d="M1 3l7 5 7-5"/>
-            </svg>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@organization.org"
-              style={{
-                width: '100%', padding: '12px 12px 12px 38px',
-                border: '1.5px solid var(--border)', borderRadius: 'var(--radius-md)',
-                fontFamily: 'inherit', fontSize: '14px', color: 'var(--charcoal)',
-                backgroundColor: 'var(--surface)',
-                transition: 'border-color 0.2s, box-shadow 0.2s',
-                outline: 'none'
-              }}
-              onFocus={(e) => { e.target.style.borderColor = 'var(--teal)'; e.target.style.boxShadow = '0 0 0 3px rgba(42,107,107,0.08)'; }}
-              onBlur={(e) => { e.target.style.borderColor = 'var(--border)'; e.target.style.boxShadow = 'none'; }}
-            />
-          </div>
-        </div>
-
-        {/* Password Field */}
-        <div style={{ marginBottom: '16px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-            <label style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Password</label>
-            <button style={{ background: 'none', border: 'none', fontSize: '11px', color: 'var(--teal)', cursor: 'pointer', fontWeight: 500 }}>Forgot?</button>
-          </div>
-          <div style={{ position: 'relative' }}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--text-muted)" strokeWidth="1.5" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }}>
-              <rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5 7V5a3 3 0 016 0v2"/>
-            </svg>
-            <input
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              style={{
-                width: '100%', padding: '12px 40px 12px 38px',
-                border: '1.5px solid var(--border)', borderRadius: 'var(--radius-md)',
-                fontFamily: 'inherit', fontSize: '14px', color: 'var(--charcoal)',
-                backgroundColor: 'var(--surface)',
-                transition: 'border-color 0.2s, box-shadow 0.2s',
-                outline: 'none'
-              }}
-              onFocus={(e) => { e.target.style.borderColor = 'var(--teal)'; e.target.style.boxShadow = '0 0 0 3px rgba(42,107,107,0.08)'; }}
-              onBlur={(e) => { e.target.style.borderColor = 'var(--border)'; e.target.style.boxShadow = 'none'; }}
-            />
-            <button onClick={() => setShowPassword(!showPassword)} style={{
-              position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)',
-              background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: 'var(--text-muted)', opacity: 0.6
-            }}>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-                {showPassword
-                  ? <><ellipse cx="8" cy="8" rx="7" ry="4"/><circle cx="8" cy="8" r="2"/></>
-                  : <><ellipse cx="8" cy="8" rx="7" ry="4"/><circle cx="8" cy="8" r="2"/><path d="M2 14L14 2" strokeWidth="1.5"/></>
-                }
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        {/* Remember Me */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
-          <button onClick={() => setRememberMe(!rememberMe)} style={{
-            width: '18px', height: '18px', borderRadius: '4px', flexShrink: 0,
-            border: rememberMe ? 'none' : '1.5px solid var(--border)',
-            background: rememberMe ? 'var(--teal)' : 'var(--surface)',
-            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'all 0.2s'
+          <div style={{
+            fontFamily: "'Instrument Serif'",
+            fontSize: '36px', fontWeight: 400,
+            color: 'var(--charcoal)',
+            marginBottom: '6px', letterSpacing: '0.5px'
           }}>
-            {rememberMe && <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2"><path d="M2.5 6l2.5 2.5 4.5-5"/></svg>}
-          </button>
-          <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Remember me for 30 days</span>
+            ImpactQ
+          </div>
+          <div style={{
+            fontSize: '12px', fontWeight: 600,
+            color: 'var(--text-muted)',
+            letterSpacing: '2px', textTransform: 'uppercase'
+          }}>
+            {APP_VERSION} · Strategic Impact
+          </div>
         </div>
 
-        {/* Sign In Button (functions as Enter) */}
-        <button onClick={handleEnter} style={{
-          width: '100%', padding: '13px 32px',
-          background: btnGrad, color: 'white', border: 'none',
-          borderRadius: 'var(--radius-md)', fontSize: '14px', fontWeight: 600,
-          cursor: 'pointer', letterSpacing: '0.3px',
-          boxShadow: `0 4px 16px ${btnShadow}`,
-          transition: 'all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1.0)',
-          marginBottom: '16px'
-        }}
-          onMouseEnter={(e) => { e.target.style.transform = 'translateY(-2px)'; e.target.style.boxShadow = `0 8px 28px ${btnShadow}`; }}
-          onMouseLeave={(e) => { e.target.style.transform = 'translateY(0)'; e.target.style.boxShadow = `0 4px 16px ${btnShadow}`; }}
-        >
-          Sign In
-        </button>
-
-        {/* SSO Divider */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-          <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
-          <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.08em' }}>or continue with</span>
-          <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
-        </div>
-
-        {/* SSO Buttons */}
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '24px' }}>
+        {/* Growth Stages Showcase with Portfolio Pulse */}
+        <div style={{
+          display: 'flex', justifyContent: 'center', gap: '16px',
+          marginBottom: '36px', padding: '20px 0',
+          borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)'
+        }}>
           {[
-            { label: 'Microsoft', icon: <svg width="16" height="16" viewBox="0 0 16 16"><rect x="1" y="1" width="6.5" height="6.5" fill="#F25022"/><rect x="8.5" y="1" width="6.5" height="6.5" fill="#7FBA00"/><rect x="1" y="8.5" width="6.5" height="6.5" fill="#00A4EF"/><rect x="8.5" y="8.5" width="6.5" height="6.5" fill="#FFB900"/></svg> },
-            { label: 'Google', icon: <svg width="16" height="16" viewBox="0 0 16 16"><path d="M15.5 8.2c0-.6-.1-1.1-.2-1.6H8v3h4.2c-.2 1-.7 1.8-1.5 2.3v2h2.4c1.4-1.3 2.4-3.2 2.4-5.7z" fill="#4285F4"/><path d="M8 16c2 0 3.7-.7 4.9-1.9l-2.4-1.9c-.7.5-1.5.7-2.5.7-1.9 0-3.6-1.3-4.2-3.1H1.3v2C2.5 14.2 5 16 8 16z" fill="#34A853"/><path d="M3.8 9.5c-.2-.5-.2-1-.2-1.5s.1-1 .2-1.5V4.3H1.3C.5 5.8 0 7.4 0 8s.5 2.2 1.3 3.7l2.5-2.2z" fill="#FBBC05"/><path d="M8 3.2c1.1 0 2.1.4 2.8 1l2.1-2.1C11.7.8 10 0 8 0 5 0 2.5 1.8 1.3 4.3l2.5 2.2C4.4 4.5 6.1 3.2 8 3.2z" fill="#EA4335"/></svg> },
-          ].map(sso => (
-            <button key={sso.label} onClick={handleEnter} style={{
-              flex: 1, padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-              border: '1.5px solid var(--border)', borderRadius: 'var(--radius-md)',
-              background: 'var(--card)', cursor: 'pointer', fontSize: '12px', fontWeight: 500,
-              color: 'var(--charcoal)', transition: 'all 0.2s'
-            }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--teal)'; e.currentTarget.style.background = 'var(--surface)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--card)'; }}
-            >
-              {sso.icon}
-              {sso.label}
-            </button>
+            { status: STATUS.SEED, label: 'Seed' },
+            { status: STATUS.SPROUTING, label: 'Sprout' },
+            { status: STATUS.BUDDING, label: 'Bud' },
+            { status: STATUS.BLOOMED, label: 'Bloom' }
+          ].map((s, i) => (
+            <React.Fragment key={s.status}>
+              <div style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
+                animation: `petalUnfurl 0.6s ease-out ${0.2 + i * 0.15}s both, dotPulse ${2.5 + i * 0.3}s ease-in-out ${0.5 + i * 0.25}s infinite`
+              }}>
+                <StatusIcon status={s.status} size={36} />
+                <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.02em' }}>{s.label}</div>
+              </div>
+              {i < 3 && (
+                <div style={{ display: 'flex', alignItems: 'center', color: 'var(--sage-light)', fontSize: '14px', marginTop: '-10px' }}>→</div>
+              )}
+            </React.Fragment>
           ))}
         </div>
 
-        {/* Footer */}
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '11px', color: 'var(--text-muted)', opacity: 0.8, marginBottom: '6px' }}>
-            {orgName}
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', fontSize: '10px' }}>
-            <span style={{ color: 'var(--text-muted)', opacity: 0.5 }}>{APP_VERSION}</span>
-            <span style={{ color: 'var(--text-muted)', opacity: 0.5 }}>Privacy</span>
-            <span style={{ color: 'var(--text-muted)', opacity: 0.5 }}>Terms</span>
-          </div>
+        {/* Enter Button */}
+        <button
+          onClick={handleEnter}
+          style={{
+            width: '100%', padding: '14px 32px',
+            background: theme === 'renaissance'
+              ? 'linear-gradient(135deg, #6B2D3E 0%, #4A1D2A 100%)'
+              : 'linear-gradient(135deg, var(--teal) 0%, var(--teal-dark) 100%)',
+            color: 'white', border: 'none',
+            borderRadius: 'var(--radius-md)',
+            fontSize: '15px', fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1.0)',
+            letterSpacing: '0.5px',
+            boxShadow: theme === 'renaissance'
+              ? '0 4px 16px rgba(107,45,62,0.2)'
+              : '0 4px 16px rgba(42,107,107,0.2)',
+            marginBottom: '24px'
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.transform = 'translateY(-2px)';
+            e.target.style.boxShadow = theme === 'renaissance'
+              ? '0 8px 24px rgba(107,45,62,0.3)'
+              : '0 8px 24px rgba(42,107,107,0.3)';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.transform = 'translateY(0)';
+            e.target.style.boxShadow = theme === 'renaissance'
+              ? '0 4px 16px rgba(107,45,62,0.2)'
+              : '0 4px 16px rgba(42,107,107,0.2)';
+          }}
+        >
+          Enter Strategic Garden
+        </button>
+
+        {/* Org Name */}
+        <div style={{
+          fontSize: '11px', color: 'var(--text-muted)',
+          fontWeight: 500, letterSpacing: '0.03em', opacity: 0.7
+        }}>
+          Goodwill Industries of Northeast Texas
         </div>
       </div>
     </div>
