@@ -1059,7 +1059,7 @@ function EditObjectiveModal({ isOpen, onClose, objective, onSave }) {
 // ============================================================
 // EDIT PLAN MODAL
 // ============================================================
-function EditPlanModal({ isOpen, onClose, plan, onSave }) {
+function EditPlanModal({ isOpen, onClose, plan, onSave, onDelete, onReassign, objectives = [] }) {
   const [title, setTitle] = useState('');
   const [owner, setOwner] = useState('');
   const [targetDate, setTargetDate] = useState('');
@@ -1067,6 +1067,9 @@ function EditPlanModal({ isOpen, onClose, plan, onSave }) {
   const [progress, setProgress] = useState(0);
   const [notes, setNotes] = useState('');
   const [status, setStatus] = useState(STATUS.SEED);
+  const [phase, setPhase] = useState(1);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [reassignTo, setReassignTo] = useState('');
 
   useEffect(() => {
     if (plan) {
@@ -1077,10 +1080,19 @@ function EditPlanModal({ isOpen, onClose, plan, onSave }) {
       setProgress(plan.progress || 0);
       setNotes(plan.notes || '');
       setStatus(plan.status || STATUS.SEED);
+      setPhase(plan.phase || 1);
+      setConfirmDelete(false);
+      setReassignTo('');
     }
   }, [plan]);
 
   if (!plan) return null;
+
+  // Find which objective this plan belongs to
+  const currentObjective = objectives.find(o => o.plans.some(p => p.id === plan.id));
+  const otherObjectives = objectives.filter(o => !o.plans.some(p => p.id === plan.id));
+  const maxPhase = currentObjective ? getMaxPhase(currentObjective.plans) : 1;
+  const phaseOptions = Array.from({ length: maxPhase + 1 }, (_, i) => i + 1);
 
   return (
     <Modal
@@ -1088,35 +1100,80 @@ function EditPlanModal({ isOpen, onClose, plan, onSave }) {
       title="Edit Plan"
       onClose={onClose}
       footer={
-        <>
-          <button onClick={onClose} style={{
-            padding: '8px 16px', borderRadius: 'var(--radius-md)',
-            border: '1px solid var(--border)', background: 'var(--card)',
-            color: 'var(--charcoal)', cursor: 'pointer', fontSize: '13px', fontWeight: 500
-          }}>Cancel</button>
-          <button onClick={() => {
-            if (title.trim()) {
-              onSave({
-                ...plan,
-                title: title.trim(),
-                owner: owner.trim(),
-                targetDate: targetDate || null,
-                startDate: startDate || null,
-                progress: Number(progress),
-                notes: notes.trim(),
-                status,
-                updatedAt: new Date().toISOString()
-              });
-              onClose();
-            }
-          }} style={{
-            padding: '8px 16px', borderRadius: 'var(--radius-md)',
-            border: 'none', background: 'var(--teal)',
-            color: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: 500
-          }}>Save Changes</button>
-        </>
+        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+          <button onClick={() => setConfirmDelete(true)} style={{
+            padding: '8px 14px', borderRadius: 'var(--radius-md)',
+            border: '1px solid rgba(192,122,107,0.3)', background: 'rgba(192,122,107,0.06)',
+            color: '#C07A6B', cursor: 'pointer', fontSize: '12px', fontWeight: 500
+          }}>Delete Plan</button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={onClose} style={{
+              padding: '8px 16px', borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--border)', background: 'var(--card)',
+              color: 'var(--charcoal)', cursor: 'pointer', fontSize: '13px', fontWeight: 500
+            }}>Cancel</button>
+            <button onClick={() => {
+              if (title.trim()) {
+                // Handle reassignment
+                if (reassignTo && reassignTo !== (currentObjective ? currentObjective.id : '')) {
+                  const updatedPlan = {
+                    ...plan, title: title.trim(), owner: owner.trim(),
+                    targetDate: targetDate || null, startDate: startDate || null,
+                    progress: Number(progress), notes: notes.trim(), status, phase,
+                    updatedAt: new Date().toISOString()
+                  };
+                  if (onReassign) onReassign(updatedPlan, reassignTo);
+                } else {
+                  onSave({
+                    ...plan, title: title.trim(), owner: owner.trim(),
+                    targetDate: targetDate || null, startDate: startDate || null,
+                    progress: Number(progress), notes: notes.trim(), status, phase,
+                    updatedAt: new Date().toISOString()
+                  });
+                }
+                onClose();
+              }
+            }} style={{
+              padding: '8px 16px', borderRadius: 'var(--radius-md)',
+              border: 'none', background: 'var(--teal)',
+              color: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: 500
+            }}>Save Changes</button>
+          </div>
+        </div>
       }
     >
+      {/* Delete confirmation overlay */}
+      {confirmDelete && (
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10,
+          background: 'rgba(255,255,255,0.95)', display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center', gap: '16px', borderRadius: 'var(--radius-lg)',
+          padding: '24px'
+        }}>
+          <div style={{ fontSize: '14px', fontWeight: 600, color: '#C07A6B', textAlign: 'center' }}>
+            Delete "{plan.title}"?
+          </div>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', textAlign: 'center' }}>
+            This action cannot be undone. All key results, milestones, and notes will be removed.
+          </div>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button onClick={() => setConfirmDelete(false)} style={{
+              padding: '8px 20px', borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--border)', background: 'var(--card)',
+              color: 'var(--charcoal)', cursor: 'pointer', fontSize: '13px', fontWeight: 500
+            }}>Keep</button>
+            <button onClick={() => {
+              if (onDelete) onDelete(plan);
+              onClose();
+            }} style={{
+              padding: '8px 20px', borderRadius: 'var(--radius-md)',
+              border: 'none', background: '#C07A6B',
+              color: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: 600
+            }}>Delete</button>
+          </div>
+        </div>
+      )}
+
       <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Title</label>
       <input
         type="text"
@@ -1129,6 +1186,29 @@ function EditPlanModal({ isOpen, onClose, plan, onSave }) {
           fontFamily: 'inherit', fontSize: '14px'
         }}
       />
+
+      {/* Wave selector */}
+      <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Wave</label>
+      <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', flexWrap: 'wrap' }}>
+        {phaseOptions.map(p => {
+          const sm = getSeasonMeta(p);
+          const isNew = p > maxPhase;
+          return (
+            <button key={p} onClick={() => setPhase(p)} type="button" style={{
+              padding: '5px 10px', borderRadius: 'var(--radius-md)',
+              border: phase === p ? `2px solid ${sm.color}` : '1px solid var(--border)',
+              background: phase === p ? `${sm.color}11` : 'var(--card)',
+              color: phase === p ? sm.color : 'var(--text-secondary)',
+              cursor: 'pointer', fontSize: '11px', fontWeight: phase === p ? 600 : 400,
+              display: 'flex', alignItems: 'center', gap: '3px', transition: 'all 0.15s'
+            }}>
+              <StageIcon status={p === 1 ? STATUS.SEED : p === 2 ? STATUS.SPROUTING : p === 3 ? STATUS.BUDDING : STATUS.BLOOMED} size={12} />
+              {isNew ? `+ Wave ${p}` : sm.label}
+            </button>
+          );
+        })}
+      </div>
+
       <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Owner</label>
       <input
         type="text"
@@ -1201,6 +1281,36 @@ function EditPlanModal({ isOpen, onClose, plan, onSave }) {
           fontFamily: 'inherit', fontSize: '14px', resize: 'none'
         }}
       />
+
+      {/* Reassign to different initiative */}
+      {otherObjectives.length > 0 && (
+        <>
+          <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+            Move to Different Initiative
+          </label>
+          <select
+            value={reassignTo}
+            onChange={(e) => setReassignTo(e.target.value)}
+            style={{
+              width: '100%', padding: '10px', marginBottom: '8px',
+              border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
+              fontFamily: 'inherit', fontSize: '13px',
+              background: reassignTo ? 'rgba(42,107,107,0.05)' : 'var(--card)',
+              color: reassignTo ? 'var(--teal)' : 'var(--charcoal)'
+            }}
+          >
+            <option value="">Keep in current initiative</option>
+            {otherObjectives.map(obj => (
+              <option key={obj.id} value={obj.id}>{obj.title}</option>
+            ))}
+          </select>
+          {reassignTo && (
+            <div style={{ fontSize: '11px', color: 'var(--teal)', marginBottom: '12px', fontStyle: 'italic' }}>
+              This plan will be moved when you save.
+            </div>
+          )}
+        </>
+      )}
     </Modal>
   );
 }
@@ -1949,6 +2059,7 @@ function App() {
   const [tlFilterStatus, setTlFilterStatus] = useState('');
   const [tlFilterOwner, setTlFilterOwner] = useState('');
   const [tlFilterAtRisk, setTlFilterAtRisk] = useState(false);
+  const [tlFilterObjective, setTlFilterObjective] = useState('');
   const tlScrollRef = useRef(null);
 
   useEffect(() => {
@@ -3778,7 +3889,7 @@ function App() {
     const allPlans = [];
     objectives.forEach(obj => {
       obj.plans.forEach(plan => {
-        allPlans.push({ ...plan, objectiveName: obj.name, objectiveId: obj.id, name: plan.title });
+        allPlans.push({ ...plan, objectiveName: obj.title || obj.name, objectiveId: obj.id, name: plan.title });
       });
     });
 
@@ -3787,6 +3898,7 @@ function App() {
       if (tlFilterStatus && p.status !== tlFilterStatus) return false;
       if (tlFilterOwner && p.owner !== tlFilterOwner) return false;
       if (tlFilterAtRisk && !p.atRisk) return false;
+      if (tlFilterObjective && p.objectiveId !== tlFilterObjective) return false;
       return true;
     });
 
@@ -3897,7 +4009,7 @@ function App() {
     const uniqueOwners = Array.from(new Set(allPlans.map(p => p.owner).filter(Boolean))).sort();
 
     // Check if any filter is active
-    const hasActiveFilter = tlFilterStatus || tlFilterOwner || tlFilterAtRisk;
+    const hasActiveFilter = tlFilterStatus || tlFilterOwner || tlFilterAtRisk || tlFilterObjective;
 
     return (
       <div style={{
@@ -4035,6 +4147,29 @@ function App() {
             ))}
           </select>
 
+          {/* Initiative filter dropdown */}
+          <select
+            value={tlFilterObjective}
+            onChange={(e) => setTlFilterObjective(e.target.value)}
+            style={{
+              padding: '6px 12px',
+              borderRadius: '20px',
+              border: '1px solid var(--border)',
+              background: tlFilterObjective ? 'var(--teal)' : 'var(--card)',
+              color: tlFilterObjective ? 'white' : 'var(--charcoal)',
+              fontSize: '12px',
+              fontWeight: 500,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              maxWidth: '200px'
+            }}
+          >
+            <option value="">All Initiatives</option>
+            {objectives.map(obj => (
+              <option key={obj.id} value={obj.id}>{obj.title}</option>
+            ))}
+          </select>
+
           {/* At-Risk toggle */}
           <button
             onClick={() => setTlFilterAtRisk(!tlFilterAtRisk)}
@@ -4069,6 +4204,7 @@ function App() {
                 setTlFilterStatus('');
                 setTlFilterOwner('');
                 setTlFilterAtRisk(false);
+                setTlFilterObjective('');
               }}
               style={{
                 padding: '6px 12px',
@@ -4770,6 +4906,7 @@ function App() {
         isOpen={!!editingPlan}
         onClose={() => setEditingPlan(null)}
         plan={editingPlan}
+        objectives={objectives}
         onSave={(updatedPlan) => {
           const updatePlanInObjectives = (objs) => objs.map(obj => ({
             ...obj,
@@ -4781,6 +4918,40 @@ function App() {
               ...selectedObjective,
               plans: selectedObjective.plans.map(p => p.id === updatedPlan.id ? updatedPlan : p)
             });
+          }
+          setEditingPlan(null);
+        }}
+        onDelete={(planToDelete) => {
+          const newObjectives = objectives.map(obj => ({
+            ...obj,
+            plans: obj.plans.filter(p => p.id !== planToDelete.id)
+          }));
+          setObjectives(newObjectives);
+          if (selectedObjective) {
+            const updated = { ...selectedObjective, plans: selectedObjective.plans.filter(p => p.id !== planToDelete.id) };
+            setSelectedObjective(updated.plans.length > 0 ? updated : null);
+            if (updated.plans.length === 0) setCurrentView('garden');
+          }
+          setEditingPlan(null);
+        }}
+        onReassign={(planToMove, targetObjId) => {
+          // Remove from source, add to target
+          const newObjectives = objectives.map(obj => {
+            if (obj.plans.some(p => p.id === planToMove.id)) {
+              return { ...obj, plans: obj.plans.filter(p => p.id !== planToMove.id) };
+            }
+            if (obj.id === targetObjId) {
+              return { ...obj, plans: [...obj.plans, planToMove] };
+            }
+            return obj;
+          });
+          setObjectives(newObjectives);
+          if (selectedObjective) {
+            if (selectedObjective.plans.some(p => p.id === planToMove.id)) {
+              const updated = { ...selectedObjective, plans: selectedObjective.plans.filter(p => p.id !== planToMove.id) };
+              setSelectedObjective(updated.plans.length > 0 ? updated : null);
+              if (updated.plans.length === 0) setCurrentView('garden');
+            }
           }
           setEditingPlan(null);
         }}
