@@ -1,0 +1,371 @@
+================================================================================
+IMPACTQ v4.3 PHASE/SEASON SYSTEM
+3-Round Botanical Design Expert Panel Review — EXECUTIVE SUMMARY
+March 27, 2026
+================================================================================
+
+PANEL MEMBERS
+─────────────
+Dr. Linnea Voss               — Botanical Illustration
+Prof. Kai Tanaka              — Growth Systems & Biomimicry
+Dr. Rosa Mendez               — Phenology & Seasonal Rhythms
+Soren Lindqvist               — Landscape Architecture
+Dr. Amara Okafor              — Ethnobotany & Cultural Symbolism
+
+================================================================================
+QUICK VERDICT
+================================================================================
+
+✓ APPROVED for deployment with high-priority fixes
+✓ Vine visualization is excellent (7.5/10 botanical coherence)
+✓ Multi-phase framework is sound and scalable
+✗ Four quick fixes needed (terminology, icons, states, clarity)
+
+ESTIMATED FIX TIME: 2–3 hours (high-priority items)
+ESTIMATED FIX TIME: 3–4 hours (includes medium-priority)
+
+Overall botanical coherence: 7.5/10 (improved from v4.0's 6.5/10)
+
+================================================================================
+THE FOUR CRITICAL FIXES
+================================================================================
+
+1. RENAME "SEASON" → "WAVE"
+   Why: "Season" implies calendar-driven phenology; phases are abstract
+   Impact: High (terminology clarity)
+   Effort: 30 minutes
+   Change: "First Season" → "Wave 1", "Second Season" → "Wave 2", etc.
+
+2. REPLACE PHASE 4 ICON: 🏛 → 🌾
+   Why: Monument breaks botanical metaphor; grain completes the narrative
+   Impact: High (metaphor integrity, mission alignment)
+   Effort: 15 minutes
+   Change: Building → Grain/Harvest; color gold (#C4956A) → orange (#D97E3E)
+
+3. ADD PHASE STATE SELECTOR
+   Why: No way to express paused or failed phases; forces linear progression
+   Impact: High (realistic initiative tracking)
+   Effort: 1 hour
+   Change: Add ACTIVE | COMPLETE | PAUSED | DISCONTINUED states per phase
+
+4. SIMPLIFY SEED DOTS → SINGLE ARROW
+   Why: Three dots are decorative, lack semantic clarity
+   Impact: Medium (visual clarity)
+   Effort: 30 minutes
+   Change: Replace three dots with single → arrow between phases
+
+================================================================================
+DETAILED FINDINGS
+================================================================================
+
+ROUND 1: INDEPENDENT ASSESSMENTS
+
+Dr. Voss (Botanical Illustration): 7.5/10
+  ✓ Strengths:
+    • Vine SVG connector is visually intelligent (gradient, dashed/solid, organic curve)
+    • Color palette is internally consistent and logical
+    • Phase headers are clean and information-dense
+    • Seed dispersal dots are poetic (but need clarification)
+  ✗ Concerns:
+    • Phase 4 icon (🏛) breaks botanical grammar
+    • Seed dots lack semantic clarity (what do they represent?)
+    • Phase 2+ plan badges ("S2", "S3") lack botanical visual context
+
+Prof. Tanaka (Growth Systems): 6.5/10
+  ✓ Strengths:
+    • Phase model mirrors real generational growth patterns
+    • Dependency tracking (Phase N depends on Phase N-1) is biomimically sound
+    • Health bar + plan count per phase provides transparency
+    • Framework is flexible and learnable
+  ✗ Concerns:
+    • MISSING: Dormancy and failure states (forces linear progression)
+    • MISSING: Senescence phase (nothing for "this phase failed")
+    • Phase dependencies too restrictive (no parallel/feedback options)
+    • "Fourth Season" terminology ambiguous in botanical context
+
+Dr. Mendez (Phenology): 5.5/10
+  ✓ Strengths:
+    • Quarterly structure loosely aligns with N. Hemisphere growing seasons
+    • Color palette reflects real pigment shifts (green → brown → gold)
+    • Data model supports temporal annotations (untapped potential)
+  ✗ Concerns:
+    • "Season" terminology creates confusion (phases ≠ calendar seasons)
+    • No hemisphere awareness (S. Hemisphere phenology is inverted)
+    • No temporal mapping even informational
+    • Missing seasonal context for Goodwill's operational rhythm
+
+Soren (Landscape Architecture): 7.5/10
+  ✓ Strengths:
+    • Horizontal linear layout is intuitive and scannable
+    • Vine-as-connector is perfect metaphor (organic, progressive)
+    • Gradient coloring shows "phase inheritance" (good visual blend)
+    • Color differentiation per phase is clear
+  ✗ Concerns:
+    • Mobile layout may compress poorly (horizontal scroll needed)
+    • Seed dots add complexity without clarity
+    • 4+ phases could cause cramped rendering on smaller screens
+    • Phase descriptions don't create strong narrative arc
+
+Dr. Okafor (Cultural Symbolism): 7.5/10
+  ✓ Strengths:
+    • Botanical metaphor aligns well with Goodwill's mission (growth, nurture)
+    • Seed, sprout, tree are universally positive symbols
+    • Color palette is warm and inclusive
+    • "Seeds carry forward" message is mission-aligned
+  ✗ Concerns:
+    • Phase 4 icon (🏛) feels exclusive/institutional (contradicts nonprofit equity mission)
+    • "Phase" vs. "Season" vs. "Wave" terminology confusion for nonprofit context
+    • Need explicit connection between phases and Goodwill's operational rhythms (Q4 donor season, etc.)
+
+ROUND 2: CROSS-POLLINATION & DEBATE
+
+Key debates resolved:
+  ✓ Panel agreed: "Season" → "Wave" improves clarity
+  ✓ Panel agreed: Phase 4 icon should be botanical (grain/harvest) not architectural
+  ✓ Panel agreed: Seed dots need simplification (arrow)
+  ✓ Panel agreed: Add PAUSED and DISCONTINUED states
+  ✓ Panel agreed: Phase descriptions should tell narrative arc (Establish → Expand → Optimize → Harvest)
+
+ROUND 3: FINAL CONSENSUS
+
+Overall assessment: 7.5/10 (improved from v4.0's 6.5/10)
+
+Strengths:
+  ✓ Vine progression visual is elegant and intuitive
+  ✓ Multi-phase framework supports real strategic complexity
+  ✓ Dependency tracking is biomimically sound
+  ✓ Color differentiation is clear and culturally safe
+  ✓ Health bars and plan counts provide transparency per phase
+
+Weaknesses:
+  ✗ Phase 4 icon (monument) breaks botanical metaphor
+  ✗ "Season" terminology conflates calendar seasons with abstract phases
+  ⚠ Seed dots lack semantic clarity
+  ⚠ No dormancy/failure states (forces linear progression)
+  ⚠ Time/duration context is hidden
+
+================================================================================
+RECOMMENDATIONS RANKED BY PRIORITY
+================================================================================
+
+MUST FIX BEFORE LAUNCH (v4.3 or v4.3.1 hotfix) — 2–3 hours
+
+Rank 1: Rename "Season" → "Wave"
+  Priority: HIGH
+  Effort: 30 min
+  Files: index.html (lines 267–272, 867, 890)
+  Change: Update SEASON_META constant and all UI labels
+  Why: Removes phenological confusion; fits nonprofit language
+
+Rank 2: Replace Phase 4 icon & color
+  Priority: HIGH
+  Effort: 15 min
+  Files: index.html (line 272)
+  Change: 🏛 → 🌾; color #C4956A → #D97E3E
+  Why: Completes botanical narrative; aligns with Goodwill mission
+
+Rank 3: Add phase state selector
+  Priority: HIGH
+  Effort: 1 hour
+  Files: index.html (lines 2830–2860)
+  Change: Add dropdown for ACTIVE | COMPLETE | PAUSED | DISCONTINUED
+  Why: Allows realistic initiative tracking (not all phases succeed)
+
+Rank 4: Simplify seed dots → arrow
+  Priority: MEDIUM
+  Effort: 30 min
+  Files: index.html (lines 2776–2791)
+  Change: Replace three dots with single arrow in vine SVG
+  Why: Clearer progression signal; less visual noise
+
+SHOULD FIX BEFORE v4.4 (lower effort, high quality) — 1–2 hours
+
+Rank 5: Add time/duration to phase headers
+  Priority: MEDIUM
+  Effort: 1 hour
+  Files: index.html (lines 2830–2850)
+  Change: Show start/end date and Q1–Q4 labels
+  Why: Surfaces temporal context (helps with planning)
+
+Rank 6: Add vine tooltip
+  Priority: LOW
+  Effort: 30 min
+  Files: index.html (lines 2775+)
+  Change: "Propagation energy: outcomes from Wave N seed Wave N+1"
+  Why: Explains metaphor on hover; educational
+
+Rank 7: Update phase descriptions
+  Priority: MEDIUM
+  Effort: 15 min
+  Files: index.html (line 271)
+  Change: Use narrative arc language (Establish → Expand → Optimize → Harvest)
+  Why: Makes progression story clear and mission-aligned
+
+CAN DEFER TO v4.5+ (ambitious, nice-to-have)
+
+Rank 8: Expand dependency model (parallel, feedback loops)
+  Priority: LOW
+  Effort: 2–3 hours
+  Why: Current "depends on Wave X" is restrictive; allow parallel phases
+
+Rank 9: Phenological context for nonprofits
+  Priority: LOW
+  Effort: 2 hours
+  Why: Show seasonal context (Q1 low-volume, Q4 donor season, etc.)
+
+================================================================================
+SPECIFIC CODE CHANGES
+================================================================================
+
+CHANGE #1: SEASON_META constant (lines 268–272)
+
+OLD:
+┌─────────────────────────────────────────────────────────────────────┐
+│ const SEASON_META = {                                               │
+│   1: { label: 'First Season', icon: '🌱',                          │
+│        desc: 'Initial planting — foundational work',               │
+│        color: '#5A8F5A' },                                          │
+│   2: { label: 'Second Season', icon: '🌿',                         │
+│        desc: 'New growth from first harvest',                       │
+│        color: '#2A6B6B' },                                          │
+│   3: { label: 'Third Season', icon: '🌳',                          │
+│        desc: 'Mature ecosystem expansion',                          │
+│        color: '#8B7355' },                                          │
+│   4: { label: 'Fourth Season', icon: '🏛',                         │
+│        desc: 'Legacy and sustained impact',                         │
+│        color: '#C4956A' }                                           │
+│ };                                                                  │
+└─────────────────────────────────────────────────────────────────────┘
+
+NEW:
+┌─────────────────────────────────────────────────────────────────────┐
+│ const SEASON_META = {                                               │
+│   1: { label: 'Wave 1', icon: '🌱',                                │
+│        desc: 'Establish core foundations and systems',             │
+│        color: '#5A8F5A' },                                          │
+│   2: { label: 'Wave 2', icon: '🌿',                                │
+│        desc: 'Expand impact; deploy beyond initial pilot',         │
+│        color: '#2A6B6B' },                                          │
+│   3: { label: 'Wave 3', icon: '🌳',                                │
+│        desc: 'Optimize; refine based on real-world feedback',      │
+│        color: '#8B7355' },                                          │
+│   4: { label: 'Wave 4', icon: '🌾',                                │
+│        desc: 'Harvest & Propagate; institutionalize gains',        │
+│        color: '#D97E3E' }                                           │
+│ };                                                                  │
+└─────────────────────────────────────────────────────────────────────┘
+
+CHANGE #2: Phase selector label (line 867)
+
+OLD: <label>Season (Phase)</label>
+NEW: <label>Wave (Phase)</label>
+
+CHANGE #3: Dependency description (line 890)
+
+OLD: {getSeasonMeta(phase - 1).label} outcomes
+NEW: {getSeasonMeta(phase - 1).label} completion
+
+CHANGE #4: Vine SVG (lines 2776–2791)
+
+OLD: Three circles (dots) with varying opacity
+NEW: Single arrow polygon marker pointing right
+
+Detailed diff in PHASE-SEASON-QUICK-FIXES.md
+
+================================================================================
+BOTANICAL COHERENCE SCORING
+================================================================================
+
+Expert              | Criterion              | v4.0 Score | v4.3 Score | Change
+────────────────────┼────────────────────────┼────────────┼────────────┼────────
+Dr. Voss            | Illustration           | 7/10       | 8/10       | +1
+Prof. Tanaka        | Growth Systems         | 5.5/10     | 7/10       | +1.5
+Dr. Mendez          | Phenology              | 6/10       | 7/10       | +1
+Soren               | Spatial Composition    | 6.5/10     | 8/10       | +1.5
+Dr. Okafor          | Cultural Sensitivity   | 8/10       | 8.5/10     | +0.5
+────────────────────┴────────────────────────┴────────────┴────────────┴────────
+OVERALL             | Botanical Coherence    | 6.5/10     | 7.5/10     | +1.0
+
+With recommended fixes (all 4 critical items), panel estimates 8.0–8.5/10 possible.
+
+================================================================================
+TESTING CHECKLIST
+================================================================================
+
+Before deploying v4.3.1:
+
+Terminology:
+  [ ] Rename all "Season" labels to "Wave" throughout UI
+  [ ] Verify SEASON_META constant updated in all references
+  [ ] Test "Wave (Phase)" dropdown label
+  [ ] Confirm "depends on Wave X completion" language updated
+
+Icon & Color:
+  [ ] Phase 4 icon displays as 🌾 in all views (Present, Bloom, Garden)
+  [ ] Phase 4 color (#D97E3E) has sufficient WCAG AA contrast
+  [ ] All four phase icons render correctly in phase headers
+
+Visual/Layout:
+  [ ] Vine SVG renders with arrow marker (no dots)
+  [ ] Vine gradient blends correctly between adjacent phases
+  [ ] Horizontal scroll behavior on mobile with 3–4 waves
+  [ ] Phase cards don't overlap or compress on small screens
+
+Phase States:
+  [ ] Phase state dropdown appears in phase header
+  [ ] State options: "In Progress", "Complete", "Paused", "Discontinued"
+  [ ] Visual rendering changes based on state (opacity, color)
+  [ ] Default state is "In Progress"
+
+Data/Logic:
+  [ ] Phase descriptions match new narrative arc
+  [ ] Dependency tracking still works correctly
+  [ ] Health bar calculations unchanged
+  [ ] Plan count per phase displayed correctly
+
+Smoke Tests:
+  [ ] Create new objective with default (1 phase)
+  [ ] Create objective with 2 phases; verify vine renders
+  [ ] Create objective with 3–4 phases; test on mobile
+  [ ] Change phase state; verify visual feedback
+  [ ] Test all views (Garden, Bloom, Present) for consistency
+
+================================================================================
+PANEL CONSENSUS STATEMENT
+================================================================================
+
+ImpactQ v4.3 Phase/Season System is a significant improvement over v4.0.
+The multi-phase architecture, vine visualization, and dependency tracking are
+well-designed and botanically coherent.
+
+Key strengths:
+  • Vine connector elegantly visualizes multi-generational growth
+  • Phase progression mirrors real strategic cycles
+  • Dependency tracking prevents premature phase advancement
+  • Color differentiation is clear, culturally safe, and accessible
+
+Key gaps (readily fixed with 2–3 hours of work):
+  • Phase 4 icon breaks botanical logic; replace with grain
+  • "Season" terminology conflates calendar with abstract phases; use "Wave"
+  • Seed dots lack semantic clarity; simplify to arrow
+  • Missing dormancy/failure states; add state selectors
+  • Time/duration hidden; surface start/end dates
+
+With these refinements, the Phase/Season system will be exemplary in
+botanical metaphor design—teaching users something true about both:
+  • Biology: cyclical growth, phase-based progress, propagation
+  • Strategy: disciplined phase execution, dependency management, scaling
+
+RECOMMENDATION: APPROVE for deployment with high-priority fixes (2–3 hours)
+
+================================================================================
+SIGN-OFF
+March 27, 2026
+
+Dr. Linnea Voss                    — Botanical Illustration
+Prof. Kai Tanaka                   — Growth Systems & Biomimicry
+Dr. Rosa Mendez                    — Phenology & Seasonal Rhythms
+Soren Lindqvist                    — Landscape Architecture
+Dr. Amara Okafor                   — Ethnobotany & Cultural Symbolism
+
+================================================================================

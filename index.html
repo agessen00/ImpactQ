@@ -244,7 +244,7 @@ function createObjective(title = '', description = '', tractionLevel = TRACTION_
   };
 }
 
-function createPlan(title = '', status = STATUS.SEED, owner = '', progress = 0, targetDate = null, startDate = null) {
+function createPlan(title = '', status = STATUS.SEED, owner = '', progress = 0, targetDate = null, startDate = null, phase = 1, dependsOn = []) {
   return {
     id: uid(),
     title,
@@ -253,6 +253,8 @@ function createPlan(title = '', status = STATUS.SEED, owner = '', progress = 0, 
     owner,
     targetDate,
     startDate,
+    phase,
+    dependsOn,
     atRisk: false,
     keyResults: [],
     milestones: [],
@@ -260,6 +262,35 @@ function createPlan(title = '', status = STATUS.SEED, owner = '', progress = 0, 
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
+}
+
+// Phase/Wave metadata — botanical growth generations
+const SEASON_META = {
+  1: { label: 'Wave 1', icon: '🌱', desc: 'Initial planting — foundational work', color: '#5A8F5A' },
+  2: { label: 'Wave 2', icon: '🌿', desc: 'New growth from first harvest', color: '#2A6B6B' },
+  3: { label: 'Wave 3', icon: '🌳', desc: 'Mature ecosystem — deep roots', color: '#8B7355' },
+  4: { label: 'Wave 4', icon: '🌾', desc: 'Full harvest — sustained yield', color: '#D4A574' }
+};
+
+function getSeasonMeta(phase) {
+  return SEASON_META[phase] || { label: `Wave ${phase}`, icon: '●', desc: 'Continued growth', color: '#8A9B8E' };
+}
+
+function getMaxPhase(plans) {
+  if (!plans || !plans.length) return 1;
+  return Math.max(...plans.map(p => p.phase || 1));
+}
+
+function getPhaseHealth(plans, phase) {
+  const phasePlans = plans.filter(p => (p.phase || 1) === phase);
+  if (!phasePlans.length) return 0;
+  return calcHealth(phasePlans);
+}
+
+function isPhaseComplete(plans, phase) {
+  const phasePlans = plans.filter(p => (p.phase || 1) === phase);
+  if (!phasePlans.length) return false;
+  return phasePlans.every(p => p.status === STATUS.BLOOMED);
 }
 
 function calcHealth(plans) {
@@ -389,7 +420,7 @@ function sampleData() {
       ...createObjective('DGR Optimization — Phase 1', 'Donated Goods Retail operational excellence across 5 verticals: Leadership, Workstations, Simplification, Culture, and Data Integrity', TRACTION_LEVELS.ANNUAL),
       plans: [
         // 1.1 DGR Leadership Recruitment & Selection
-        { ...createPlan('1.1 DGR Leadership Recruitment & Selection', STATUS.SEED, 'HR Director', 0, new Date(2026, 6, 31).toISOString(), new Date(2026, 3, 1).toISOString()),
+        { ...createPlan('1.1 DGR Leadership Recruitment & Selection', STATUS.SEED, 'HR Director', 0, new Date(2026, 6, 31).toISOString(), new Date(2026, 3, 1).toISOString(), 1),
           keyResults: [
             {id:uid(), text:'1.1.1 Internal workflows — tools, steps, approval chains mapped', completed:false},
             {id:uid(), text:'1.1.2 External workflows — job boards, sourcing, screening pipelines', completed:false},
@@ -399,7 +430,7 @@ function sampleData() {
           notes: 'Phase 1 Vertical 1: Recruit and select salary-exempt DGR leadership. Clarify ownership between DGR ops and HR.'
         },
         // 1.2 Workstation Normalization & Kaizen
-        { ...createPlan('1.2 Workstation Normalization & Kaizen', STATUS.SEED, 'Ops Manager', 0, new Date(2026, 7, 31).toISOString(), new Date(2026, 3, 15).toISOString()),
+        { ...createPlan('1.2 Workstation Normalization & Kaizen', STATUS.SEED, 'Ops Manager', 0, new Date(2026, 7, 31).toISOString(), new Date(2026, 3, 15).toISOString(), 1),
           keyResults: [
             {id:uid(), text:'1.2.1 Softlines — standardized sorting, pricing, display stations', completed:false},
             {id:uid(), text:'1.2.2 Hardlines — standardized sorting, pricing, display stations', completed:false},
@@ -410,7 +441,7 @@ function sampleData() {
           notes: 'Phase 1 Vertical 2: Normalize every workstation. Apply Kaizen continuous improvement to Softlines, Hardlines, Donor Door, and Cashier.'
         },
         // 1.3 DGR Simplification — Categories & Roles
-        { ...createPlan('1.3 Category & Role Simplification', STATUS.SEED, 'DGR Lead', 0, new Date(2026, 7, 15).toISOString(), new Date(2026, 4, 1).toISOString()),
+        { ...createPlan('1.3 Category & Role Simplification', STATUS.SEED, 'DGR Lead', 0, new Date(2026, 7, 15).toISOString(), new Date(2026, 4, 1).toISOString(), 1),
           keyResults: [
             {id:uid(), text:'1.3.1 Job description rollout — all hourly DGR roles updated', completed:false},
             {id:uid(), text:'1.3.2.1 On-the-job training checklists created for each role', completed:false},
@@ -420,7 +451,7 @@ function sampleData() {
           notes: 'Phase 1 Vertical 3: Simplify product categories and hourly job roles. Create clear OJT checklists. Align Mission Services participants.'
         },
         // 1.4 Change Management — Culture Shift
-        { ...createPlan('1.4 Culture Shift: Sales-per-Production', STATUS.SEED, 'Change Lead', 0, new Date(2026, 8, 15).toISOString(), new Date(2026, 3, 15).toISOString()),
+        { ...createPlan('1.4 Culture Shift: Sales-per-Production', STATUS.SEED, 'Change Lead', 0, new Date(2026, 8, 15).toISOString(), new Date(2026, 3, 15).toISOString(), 1),
           keyResults: [
             {id:uid(), text:'1.4.1 Daily huddle communication — format, cadence, talking points', completed:false},
             {id:uid(), text:'1.4.2 Goodwill network best practices — benchmarked and adopted', completed:false},
@@ -430,7 +461,7 @@ function sampleData() {
           notes: 'Phase 1 Vertical 4: Transform from volume/production culture to sales-per-production and person-centered development. Align with Goodwill network best practices.'
         },
         // 1.5 Data Integrity — Source of Truth
-        { ...createPlan('1.5 Data Integrity & Source of Truth', STATUS.SEED, 'IT / Analytics', 0, new Date(2026, 8, 30).toISOString(), new Date(2026, 4, 1).toISOString()),
+        { ...createPlan('1.5 Data Integrity & Source of Truth', STATUS.SEED, 'IT / Analytics', 0, new Date(2026, 8, 30).toISOString(), new Date(2026, 4, 1).toISOString(), 1),
           keyResults: [
             {id:uid(), text:'1.5.1 LaborIQ staffing plan — reviewed, validated, rolled out', completed:false},
             {id:uid(), text:'1.5.2 HRMS ADP mass employee audit — clean data, no duplicates', completed:false},
@@ -438,6 +469,57 @@ function sampleData() {
           ],
           milestones: [{id:uid(), text:'Source-of-truth audit kicked off', completed:false}, {id:uid(), text:'HRMS/POS/Donor data reconciled', completed:false}, {id:uid(), text:'Automation scripts deployed', completed:false}],
           notes: 'Phase 1 Vertical 5: Establish data integrity across HRMS (ADP), POS/POP, and Donor systems. Automate identity and training platform sync.'
+        },
+        // ── PHASE 2: Months 7-12 ── (Second Season — builds on Phase 1 foundations)
+        // 2.1 Advanced Staffing Model
+        { ...createPlan('2.1 Advanced Staffing Model', STATUS.SEED, 'HR Director', 0, new Date(2026, 11, 31).toISOString(), new Date(2026, 9, 1).toISOString(), 2),
+          keyResults: [
+            {id:uid(), text:'2.1.1 Performance-based scheduling — tie staffing to sales-per-hour', completed:false},
+            {id:uid(), text:'2.1.2 Cross-training matrix — multi-station capabilities per employee', completed:false},
+            {id:uid(), text:'2.1.3 Succession pipeline — identify and develop next-level leaders', completed:false}
+          ],
+          milestones: [{id:uid(), text:'Staffing model v2 approved', completed:false}, {id:uid(), text:'Cross-training pilot at 2 locations', completed:false}],
+          notes: 'Phase 2 Vertical 1: Builds on 1.1 leadership recruitment. Advance from basic staffing to performance-based model with cross-training.'
+        },
+        // 2.2 Workstation Optimization & Throughput
+        { ...createPlan('2.2 Workstation Throughput Optimization', STATUS.SEED, 'Ops Manager', 0, new Date(2027, 0, 31).toISOString(), new Date(2026, 9, 15).toISOString(), 2),
+          keyResults: [
+            {id:uid(), text:'2.2.1 Throughput metrics — items processed per labor hour per station', completed:false},
+            {id:uid(), text:'2.2.2 Layout optimization — workstation flow redesign using Kaizen data', completed:false},
+            {id:uid(), text:'2.2.3 Technology integration — barcode/RFID at key stations', completed:false}
+          ],
+          milestones: [{id:uid(), text:'Baseline throughput measured', completed:false}, {id:uid(), text:'Redesigned layouts piloted', completed:false}],
+          notes: 'Phase 2 Vertical 2: Builds on 1.2 workstation normalization. Optimize throughput using Phase 1 Kaizen insights and add technology.'
+        },
+        // 2.3 Category Performance & Pricing Intelligence
+        { ...createPlan('2.3 Category Performance & Pricing', STATUS.SEED, 'DGR Lead', 0, new Date(2027, 0, 15).toISOString(), new Date(2026, 10, 1).toISOString(), 2),
+          keyResults: [
+            {id:uid(), text:'2.3.1 Category profitability analysis — margin by category', completed:false},
+            {id:uid(), text:'2.3.2 Dynamic pricing pilot — demand-based pricing for high-value items', completed:false},
+            {id:uid(), text:'2.3.3 Category expansion evaluation — new verticals assessment', completed:false}
+          ],
+          milestones: [{id:uid(), text:'Profitability dashboard live', completed:false}, {id:uid(), text:'Dynamic pricing tested at 1 location', completed:false}],
+          notes: 'Phase 2 Vertical 3: Builds on 1.3 category simplification. Move from simplified categories to performance-optimized merchandising.'
+        },
+        // 2.4 Culture Scaling & Recognition
+        { ...createPlan('2.4 Culture Scaling & Recognition', STATUS.SEED, 'Change Lead', 0, new Date(2027, 1, 15).toISOString(), new Date(2026, 10, 1).toISOString(), 2),
+          keyResults: [
+            {id:uid(), text:'2.4.1 Recognition program — peer-nominated awards tied to KPIs', completed:false},
+            {id:uid(), text:'2.4.2 Culture playbook — documented, replicable for new locations', completed:false},
+            {id:uid(), text:'2.4.3 Employee engagement survey — baseline + quarterly pulse', completed:false}
+          ],
+          milestones: [{id:uid(), text:'Recognition program launched', completed:false}, {id:uid(), text:'Culture playbook v1 published', completed:false}],
+          notes: 'Phase 2 Vertical 4: Builds on 1.4 culture shift. Scale the sales-per-production mindset with formal recognition and replicable playbook.'
+        },
+        // 2.5 Analytics & Automation
+        { ...createPlan('2.5 Analytics & Process Automation', STATUS.SEED, 'IT / Analytics', 0, new Date(2027, 1, 28).toISOString(), new Date(2026, 10, 15).toISOString(), 2),
+          keyResults: [
+            {id:uid(), text:'2.5.1 Predictive analytics — demand forecasting for staffing and donations', completed:false},
+            {id:uid(), text:'2.5.2 Automated reporting — daily ops dashboard, weekly exec summary', completed:false},
+            {id:uid(), text:'2.5.3 Integration layer — LaborIQ ↔ ADP ↔ POS real-time sync', completed:false}
+          ],
+          milestones: [{id:uid(), text:'Predictive model v1 trained', completed:false}, {id:uid(), text:'Auto-reports delivering daily', completed:false}],
+          notes: 'Phase 2 Vertical 5: Builds on 1.5 data integrity. Move from clean data to actionable intelligence and automated workflows.'
         },
       ]
     },
@@ -738,11 +820,17 @@ function AddObjectiveModal({ isOpen, onClose, onAdd }) {
 // ============================================================
 // ADD PLAN MODAL
 // ============================================================
-function AddPlanModal({ isOpen, onClose, onAdd }) {
+function AddPlanModal({ isOpen, onClose, onAdd, existingPlans = [] }) {
   const [title, setTitle] = useState('');
   const [owner, setOwner] = useState('');
   const [targetDate, setTargetDate] = useState('');
   const [startDate, setStartDate] = useState('');
+  const [phase, setPhase] = useState(1);
+  const [dependsOn, setDependsOn] = useState([]);
+
+  const maxPhase = getMaxPhase(existingPlans);
+  const phaseOptions = Array.from({ length: maxPhase + 1 }, (_, i) => i + 1);
+  const prevPhasePlans = existingPlans.filter(p => (p.phase || 1) === phase - 1);
 
   return (
     <Modal
@@ -758,11 +846,13 @@ function AddPlanModal({ isOpen, onClose, onAdd }) {
           }}>Cancel</button>
           <button onClick={() => {
             if (title.trim()) {
-              onAdd({ title: title.trim(), owner: owner.trim(), targetDate: targetDate || null, startDate: startDate || null });
+              onAdd({ title: title.trim(), owner: owner.trim(), targetDate: targetDate || null, startDate: startDate || null, phase, dependsOn });
               setTitle('');
               setOwner('');
               setTargetDate('');
               setStartDate('');
+              setPhase(1);
+              setDependsOn([]);
               onClose();
             }
           }} style={{
@@ -773,6 +863,34 @@ function AddPlanModal({ isOpen, onClose, onAdd }) {
         </>
       }
     >
+      {/* Wave/Phase selector */}
+      <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Wave (Phase)</label>
+      <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', flexWrap: 'wrap' }}>
+        {phaseOptions.map(p => {
+          const sm = getSeasonMeta(p);
+          const isNew = p > maxPhase;
+          return (
+            <button key={p} onClick={() => { setPhase(p); setDependsOn([]); }} style={{
+              padding: '6px 12px', borderRadius: 'var(--radius-md)',
+              border: phase === p ? `2px solid ${sm.color}` : '1px solid var(--border)',
+              background: phase === p ? `${sm.color}11` : 'var(--card)',
+              color: phase === p ? sm.color : 'var(--text-secondary)',
+              cursor: 'pointer', fontSize: '12px', fontWeight: phase === p ? 600 : 400,
+              display: 'flex', alignItems: 'center', gap: '4px', transition: 'all 0.15s'
+            }}>
+              <StageIcon status={p === 1 ? STATUS.SEED : p === 2 ? STATUS.SPROUTING : p === 3 ? STATUS.BUDDING : STATUS.BLOOMED} size={14} />
+              {isNew ? `+ New Wave ${p}` : sm.label}
+            </button>
+          );
+        })}
+      </div>
+      {phase > 1 && (
+        <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '12px', padding: '8px 10px',
+          background: 'rgba(42,107,107,0.04)', borderRadius: 'var(--radius-sm)', borderLeft: `3px solid ${getSeasonMeta(phase).color}` }}>
+          {getSeasonMeta(phase).desc} — builds on {getSeasonMeta(phase - 1).label} outcomes
+        </div>
+      )}
+
       <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Plan Title</label>
       <input
         type="text"
@@ -819,6 +937,37 @@ function AddPlanModal({ isOpen, onClose, onAdd }) {
           fontFamily: 'inherit', fontSize: '14px'
         }}
       />
+
+      {/* Dependency selector for Phase 2+ */}
+      {phase > 1 && prevPhasePlans.length > 0 && (
+        <>
+          <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>
+            Depends On ({getSeasonMeta(phase - 1).label} plans)
+          </label>
+          <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: '6px', fontStyle: 'italic' }}>
+            Select which prior-wave plans must bloom before this one can begin
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '12px',
+            maxHeight: '120px', overflowY: 'auto', padding: '4px', border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-md)', background: 'var(--surface)' }}>
+            {prevPhasePlans.map(pp => (
+              <label key={pp.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px',
+                borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: '12px', color: 'var(--charcoal)',
+                background: dependsOn.includes(pp.id) ? 'rgba(42,107,107,0.06)' : 'transparent',
+                transition: 'background 0.1s' }}>
+                <input type="checkbox" checked={dependsOn.includes(pp.id)}
+                  onChange={() => setDependsOn(prev => prev.includes(pp.id) ? prev.filter(d => d !== pp.id) : [...prev, pp.id])}
+                  style={{ accentColor: 'var(--teal)' }} />
+                <StageIcon status={pp.status} size={12} />
+                <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pp.title}</span>
+                <span style={{ fontSize: '10px', color: pp.status === STATUS.BLOOMED ? 'var(--teal)' : 'var(--text-muted)' }}>
+                  {STATUS_META[pp.status].label}
+                </span>
+              </label>
+            ))}
+          </div>
+        </>
+      )}
     </Modal>
   );
 }
@@ -1262,6 +1411,39 @@ function PlanCard({ plan, objective, onEdit, onDelete, onStatusChange, onProgres
               {statusMeta.label}
               {plan.status !== STATUS.BLOOMED && <span style={{ fontSize: '9px', opacity: 0.6 }}>→</span>}
             </button>
+            {plan.phase > 1 && (
+              <span style={{
+                fontSize: '10px', padding: '3px 7px', borderRadius: '10px',
+                background: `${getSeasonMeta(plan.phase).color}12`,
+                color: getSeasonMeta(plan.phase).color,
+                fontWeight: 600, border: `1px solid ${getSeasonMeta(plan.phase).color}22`
+              }}>
+                S{plan.phase}
+              </span>
+            )}
+            {plan.dependsOn && plan.dependsOn.length > 0 && (() => {
+              const blockedCount = plan.dependsOn.filter(depId => {
+                const dep = (objective && objective.plans || []).find(p => p.id === depId);
+                return dep && dep.status !== STATUS.BLOOMED;
+              }).length;
+              return blockedCount > 0 ? (
+                <span style={{
+                  fontSize: '10px', padding: '3px 8px', borderRadius: '10px',
+                  background: 'rgba(192,122,107,0.15)', color: '#C07A6B',
+                  fontWeight: 600, border: '1px solid rgba(192,122,107,0.2)'
+                }} title={`Blocked by ${blockedCount} incomplete plan(s) from previous wave`}>
+                  ⊳ Waiting on {blockedCount}
+                </span>
+              ) : (
+                <span style={{
+                  fontSize: '10px', padding: '3px 7px', borderRadius: '10px',
+                  background: 'rgba(42,107,107,0.08)', color: 'var(--teal)',
+                  fontWeight: 500
+                }} title="All dependencies complete — ready to proceed">
+                  ✓ Dependencies met
+                </span>
+              );
+            })()}
             {plan.targetDate && (
               <span style={{
                 fontSize: '11px',
@@ -2544,30 +2726,31 @@ function App() {
               <div>Health: <strong>{calcHealth(selectedObjective.plans)}%</strong></div>
               <div>Plans: <strong>{selectedObjective.plans.length}</strong></div>
               <div>On Track: <strong>{onTrackCount(selectedObjective.plans)}</strong></div>
+              {getMaxPhase(selectedObjective.plans) > 1 && (
+                <div>Seasons: <strong>{getMaxPhase(selectedObjective.plans)}</strong></div>
+              )}
             </div>
           </div>
 
-          <button onClick={() => setShowAddPlan(true)} style={{
-            padding: '10px 16px', fontSize: '13px', border: 'none',
-            background: 'var(--teal)', color: 'white', borderRadius: 'var(--radius-md)',
-            cursor: 'pointer', fontWeight: 500, marginBottom: '16px'
-          }}>+ Add Plan</button>
+          {/* Toolbar row */}
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <button onClick={() => setShowAddPlan(true)} style={{
+              padding: '10px 16px', fontSize: '13px', border: 'none',
+              background: 'var(--teal)', color: 'white', borderRadius: 'var(--radius-md)',
+              cursor: 'pointer', fontWeight: 500
+            }}>+ Add Plan</button>
 
-          <div style={{
-            display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap',
-            backgroundColor: 'var(--pale-bg)', padding: '12px', borderRadius: 'var(--radius-md)'
-          }}>
             <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={{
-              padding: '6px 10px', fontSize: '12px', border: '1px solid var(--border)',
+              padding: '8px 10px', fontSize: '12px', border: '1px solid var(--border)',
               borderRadius: 'var(--radius-sm)', background: 'var(--card)', cursor: 'pointer'
             }}>
-              <option value="status">Sort by: Status</option>
-              <option value="progress">Sort by: Progress</option>
-              <option value="duedate">Sort by: Due Date</option>
-              <option value="owner">Sort by: Owner</option>
+              <option value="status">Sort: Status</option>
+              <option value="progress">Sort: Progress</option>
+              <option value="duedate">Sort: Due Date</option>
+              <option value="owner">Sort: Owner</option>
             </select>
             <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} style={{
-              padding: '6px 10px', fontSize: '12px', border: '1px solid var(--border)',
+              padding: '8px 10px', fontSize: '12px', border: '1px solid var(--border)',
               borderRadius: 'var(--radius-sm)', background: 'var(--card)', cursor: 'pointer'
             }}>
               <option value="">All Status</option>
@@ -2577,7 +2760,7 @@ function App() {
               <option value={STATUS.BLOOMED}>Bloomed</option>
             </select>
             <select value={filterOwner} onChange={(e) => setFilterOwner(e.target.value)} style={{
-              padding: '6px 10px', fontSize: '12px', border: '1px solid var(--border)',
+              padding: '8px 10px', fontSize: '12px', border: '1px solid var(--border)',
               borderRadius: 'var(--radius-sm)', background: 'var(--card)', cursor: 'pointer'
             }}>
               <option value="">All Owners</option>
@@ -2587,89 +2770,229 @@ function App() {
             </select>
           </div>
 
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(350px, 1fr))',
-            gap: '16px'
-          }}>
-            {filteredPlans.map(plan => (
-              <PlanCard
-                key={plan.id}
-                plan={plan}
-                objective={selectedObjective}
-                onEdit={() => {
-                  setEditingPlan(plan);
-                }}
-                onDelete={() => {
-                  setSelectedObjective({
-                    ...selectedObjective,
-                    plans: selectedObjective.plans.filter(p => p.id !== plan.id)
-                  });
-                  setObjectives(objectives.map(o =>
-                    o.id === selectedObjective.id
-                      ? { ...o, plans: o.plans.filter(p => p.id !== plan.id) }
-                      : o
-                  ));
-                }}
-                onStatusChange={() => {
-                  const statuses = [STATUS.SEED, STATUS.SPROUTING, STATUS.BUDDING, STATUS.BLOOMED];
-                  const currentIdx = statuses.indexOf(plan.status);
-                  const nextIdx = (currentIdx + 1) % statuses.length;
-                  const updatedPlan = { ...plan, status: statuses[nextIdx] };
-                  setSelectedObjective({
-                    ...selectedObjective,
-                    plans: selectedObjective.plans.map(p => p.id === plan.id ? updatedPlan : p)
-                  });
-                  setObjectives(objectives.map(o =>
-                    o.id === selectedObjective.id
-                      ? { ...o, plans: o.plans.map(p => p.id === plan.id ? updatedPlan : p) }
-                      : o
-                  ));
-                }}
-                onProgressChange={(val) => {
-                  const updatedPlan = { ...plan, progress: val };
-                  setSelectedObjective({
-                    ...selectedObjective,
-                    plans: selectedObjective.plans.map(p => p.id === plan.id ? updatedPlan : p)
-                  });
-                  setObjectives(objectives.map(o =>
-                    o.id === selectedObjective.id
-                      ? { ...o, plans: o.plans.map(p => p.id === plan.id ? updatedPlan : p) }
-                      : o
-                  ));
-                }}
-                onAtRiskToggle={() => {
-                  const updatedPlan = { ...plan, atRisk: !plan.atRisk };
-                  setSelectedObjective({
-                    ...selectedObjective,
-                    plans: selectedObjective.plans.map(p => p.id === plan.id ? updatedPlan : p)
-                  });
-                  setObjectives(objectives.map(o =>
-                    o.id === selectedObjective.id
-                      ? { ...o, plans: o.plans.map(p => p.id === plan.id ? updatedPlan : p) }
-                      : o
-                  ));
-                }}
-                onKRToggle={(krId) => {
-                  const updatedPlan = {
-                    ...plan,
-                    keyResults: plan.keyResults.map(kr =>
-                      kr.id === krId ? { ...kr, completed: !kr.completed } : kr
-                    )
-                  };
-                  setSelectedObjective({
-                    ...selectedObjective,
-                    plans: selectedObjective.plans.map(p => p.id === plan.id ? updatedPlan : p)
-                  });
-                  setObjectives(objectives.map(o =>
-                    o.id === selectedObjective.id
-                      ? { ...o, plans: o.plans.map(p => p.id === plan.id ? updatedPlan : p) }
-                      : o
-                  ));
-                }}
-              />
-            ))}
-          </div>
+          {/* Phase/Season Progression Visual */}
+          {(() => {
+            const maxP = getMaxPhase(selectedObjective.plans);
+            const phases = Array.from({ length: maxP }, (_, i) => i + 1);
+            if (maxP <= 1 && selectedObjective.plans.every(p => !p.phase || p.phase === 1)) return null;
+            return (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '0', marginBottom: '20px',
+                padding: '16px', backgroundColor: 'var(--card)', border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-lg)', overflow: 'auto'
+              }}>
+                {phases.map((ph, idx) => {
+                  const sm = getSeasonMeta(ph);
+                  const phPlans = selectedObjective.plans.filter(p => (p.phase || 1) === ph);
+                  const health = getPhaseHealth(selectedObjective.plans, ph);
+                  const complete = isPhaseComplete(selectedObjective.plans, ph);
+                  return (
+                    <React.Fragment key={ph}>
+                      {idx > 0 && (
+                        <div style={{ display: 'flex', alignItems: 'center', padding: '0 8px' }}>
+                          <svg width="40" height="24" viewBox="0 0 40 24" role="img" aria-label={`${complete ? 'Complete' : 'In progress'} growth from ${getSeasonMeta(ph - 1).label} to ${sm.label}`}>
+                            <defs>
+                              <linearGradient id={`vine-grad-${ph}`} x1="0" y1="0" x2="1" y2="0">
+                                <stop offset="0%" stopColor={getSeasonMeta(ph - 1).color} />
+                                <stop offset="100%" stopColor={sm.color} />
+                              </linearGradient>
+                            </defs>
+                            <path d="M0,12 C10,4 30,20 40,12" stroke={`url(#vine-grad-${ph})`} strokeWidth="2" fill="none" strokeDasharray={complete ? 'none' : '4,3'} />
+                            {isPhaseComplete(selectedObjective.plans, ph - 1) && (
+                              <>
+                                <circle cx="6" cy="6" r="2.5" fill={getSeasonMeta(ph - 1).color} opacity="0.6" />
+                                <circle cx="20" cy="3" r="2" fill={sm.color} opacity="0.4" />
+                                <circle cx="34" cy="8" r="2.5" fill={sm.color} opacity="0.6" />
+                              </>
+                            )}
+                          </svg>
+                        </div>
+                      )}
+                      <div style={{
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
+                        padding: '10px 16px', borderRadius: 'var(--radius-md)',
+                        background: `${sm.color}08`, border: `1px solid ${sm.color}22`,
+                        minWidth: '110px', transition: 'all 0.2s'
+                      }}>
+                        <StageIcon status={ph === 1 ? STATUS.SEED : ph === 2 ? STATUS.SPROUTING : ph === 3 ? STATUS.BUDDING : STATUS.BLOOMED} size={28} />
+                        <span style={{ fontSize: '12px', fontWeight: 600, color: sm.color }}>{sm.label}</span>
+                        <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{phPlans.length} plans</span>
+                        <div style={{ width: '60px', height: '4px', borderRadius: '2px', background: 'var(--border)', overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${health}%`, background: sm.color, borderRadius: '2px', transition: 'width 0.4s' }} />
+                        </div>
+                        {complete && <span style={{ fontSize: '9px', color: sm.color, fontWeight: 600 }}>COMPLETE</span>}
+                      </div>
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+            );
+          })()}
+
+          {/* Plans grouped by Phase/Season */}
+          {(() => {
+            const maxP = getMaxPhase(selectedObjective.plans);
+            const phases = Array.from({ length: maxP }, (_, i) => i + 1);
+            const hasMultiplePhases = maxP > 1 || selectedObjective.plans.some(p => p.phase > 1);
+
+            return phases.map(ph => {
+              const phasePlans = filteredPlans.filter(p => (p.phase || 1) === ph);
+              if (phasePlans.length === 0 && !hasMultiplePhases) return null;
+              const sm = getSeasonMeta(ph);
+              const prevComplete = ph > 1 ? isPhaseComplete(selectedObjective.plans, ph - 1) : true;
+
+              return (
+                <div key={ph} style={{ marginBottom: '24px' }}>
+                  {/* Season Header */}
+                  {hasMultiplePhases && (
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px',
+                      padding: '10px 16px', borderRadius: 'var(--radius-md)',
+                      background: `linear-gradient(135deg, ${sm.color}08, ${sm.color}03)`,
+                      borderLeft: `3px solid ${sm.color}`
+                    }}>
+                      <StageIcon status={ph === 1 ? STATUS.SEED : ph === 2 ? STATUS.SPROUTING : ph === 3 ? STATUS.BUDDING : STATUS.BLOOMED} size={22} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '14px', fontWeight: 600, color: sm.color }}>{sm.label}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{sm.desc}</div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--charcoal)' }}>
+                          {phasePlans.length} plan{phasePlans.length !== 1 ? 's' : ''}
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                          {getPhaseHealth(selectedObjective.plans, ph)}% health
+                        </div>
+                      </div>
+                      {!prevComplete && ph > 1 && (
+                        <div style={{
+                          fontSize: '10px', padding: '3px 8px', borderRadius: '10px',
+                          background: 'rgba(192,122,107,0.1)', color: '#C07A6B', fontWeight: 600
+                        }}>
+                          Waiting on {getSeasonMeta(ph - 1).label}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Plan Cards Grid */}
+                  {phasePlans.length > 0 ? (
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(350px, 1fr))',
+                      gap: '16px'
+                    }}>
+                      {phasePlans.map(plan => (
+                        <PlanCard
+                          key={plan.id}
+                          plan={plan}
+                          objective={selectedObjective}
+                          onEdit={() => setEditingPlan(plan)}
+                          onDelete={() => {
+                            setSelectedObjective({
+                              ...selectedObjective,
+                              plans: selectedObjective.plans.filter(p => p.id !== plan.id)
+                            });
+                            setObjectives(objectives.map(o =>
+                              o.id === selectedObjective.id
+                                ? { ...o, plans: o.plans.filter(p => p.id !== plan.id) }
+                                : o
+                            ));
+                          }}
+                          onStatusChange={() => {
+                            const statuses = [STATUS.SEED, STATUS.SPROUTING, STATUS.BUDDING, STATUS.BLOOMED];
+                            const currentIdx = statuses.indexOf(plan.status);
+                            const nextIdx = (currentIdx + 1) % statuses.length;
+                            const updatedPlan = { ...plan, status: statuses[nextIdx] };
+                            setSelectedObjective({
+                              ...selectedObjective,
+                              plans: selectedObjective.plans.map(p => p.id === plan.id ? updatedPlan : p)
+                            });
+                            setObjectives(objectives.map(o =>
+                              o.id === selectedObjective.id
+                                ? { ...o, plans: o.plans.map(p => p.id === plan.id ? updatedPlan : p) }
+                                : o
+                            ));
+                          }}
+                          onProgressChange={(val) => {
+                            const updatedPlan = { ...plan, progress: val };
+                            setSelectedObjective({
+                              ...selectedObjective,
+                              plans: selectedObjective.plans.map(p => p.id === plan.id ? updatedPlan : p)
+                            });
+                            setObjectives(objectives.map(o =>
+                              o.id === selectedObjective.id
+                                ? { ...o, plans: o.plans.map(p => p.id === plan.id ? updatedPlan : p) }
+                                : o
+                            ));
+                          }}
+                          onAtRiskToggle={() => {
+                            const updatedPlan = { ...plan, atRisk: !plan.atRisk };
+                            setSelectedObjective({
+                              ...selectedObjective,
+                              plans: selectedObjective.plans.map(p => p.id === plan.id ? updatedPlan : p)
+                            });
+                            setObjectives(objectives.map(o =>
+                              o.id === selectedObjective.id
+                                ? { ...o, plans: o.plans.map(p => p.id === plan.id ? updatedPlan : p) }
+                                : o
+                            ));
+                          }}
+                          onKRToggle={(krId) => {
+                            const updatedPlan = {
+                              ...plan,
+                              keyResults: plan.keyResults.map(kr =>
+                                kr.id === krId ? { ...kr, completed: !kr.completed } : kr
+                              )
+                            };
+                            setSelectedObjective({
+                              ...selectedObjective,
+                              plans: selectedObjective.plans.map(p => p.id === plan.id ? updatedPlan : p)
+                            });
+                            setObjectives(objectives.map(o =>
+                              o.id === selectedObjective.id
+                                ? { ...o, plans: o.plans.map(p => p.id === plan.id ? updatedPlan : p) }
+                                : o
+                            ));
+                          }}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{
+                      padding: '24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px',
+                      border: '1px dashed var(--border)', borderRadius: 'var(--radius-md)', background: 'var(--surface)'
+                    }}>
+                      No plans in this season yet.
+                      <button onClick={() => setShowAddPlan(true)} style={{
+                        display: 'inline', background: 'none', border: 'none', color: 'var(--teal)',
+                        cursor: 'pointer', fontWeight: 500, fontSize: '13px', textDecoration: 'underline', marginLeft: '4px'
+                      }}>Add one</button>
+                    </div>
+                  )}
+
+                  {/* Wave connector — growth carries forward */}
+                  {hasMultiplePhases && ph < maxP && (
+                    <div style={{
+                      display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '8px 0', opacity: 0.45
+                    }}>
+                      <svg width="140" height="24" viewBox="0 0 140 24" role="img" aria-label={`Growth carries from ${sm.label} to ${getSeasonMeta(ph + 1).label}`}>
+                        <defs>
+                          <linearGradient id={`wave-connect-${ph}`} x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0%" stopColor={sm.color} />
+                            <stop offset="100%" stopColor={getSeasonMeta(ph + 1).color} />
+                          </linearGradient>
+                        </defs>
+                        <path d="M10,12 C40,4 100,20 130,12" stroke={`url(#wave-connect-${ph})`} strokeWidth="1.5" fill="none" />
+                        <polygon points="126,8 134,12 126,16" fill={getSeasonMeta(ph + 1).color} opacity="0.7" />
+                        <text x="70" y="22" textAnchor="middle" fontSize="8" fill="var(--text-muted)" fontStyle="italic">growth carries forward</text>
+                      </svg>
+                    </div>
+                  )}
+                </div>
+              );
+            });
+          })()}
         </div>
       </div>
     );
@@ -3558,8 +3881,8 @@ function App() {
       );
     }
 
-    const colW = Math.max(36, Math.min(52, 1200 / daysInMonth));
-    const sidebarW = 220;
+    const colW = Math.max(24, Math.min(36, 900 / daysInMonth));
+    const sidebarW = 180;
     const rowH = 44;
     const headerH = 56;
 
@@ -3776,12 +4099,12 @@ function App() {
             {/* Sidebar header aligned with day header */}
             <div style={{
               height: headerH + 'px', minHeight: headerH + 'px',
-              padding: '0 16px',
+              padding: '0 10px',
               display: 'flex', alignItems: 'flex-end', paddingBottom: '10px',
               borderBottom: '1px solid var(--border)',
               background: 'var(--surface)'
             }}>
-              <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              <span style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                 Objectives / Plans
               </span>
             </div>
@@ -3791,8 +4114,8 @@ function App() {
                 <div key={objName}>
                   {/* Objective group header */}
                   <div style={{
-                    padding: '12px 16px 6px',
-                    fontSize: '11px', fontWeight: 700,
+                    padding: '10px 10px 6px',
+                    fontSize: '10px', fontWeight: 700,
                     color: 'var(--teal)', textTransform: 'uppercase',
                     letterSpacing: '0.06em',
                     borderBottom: '1px solid rgba(138,155,142,0.1)',
@@ -3810,8 +4133,8 @@ function App() {
                       onClick={() => setEditingPlan(plan)}
                       style={{
                         height: rowH + 'px',
-                        padding: '0 16px', display: 'flex', alignItems: 'center', gap: '8px',
-                        cursor: 'pointer', fontSize: '12px', color: 'var(--charcoal)',
+                        padding: '0 10px', display: 'flex', alignItems: 'center', gap: '6px',
+                        cursor: 'pointer', fontSize: '11px', color: 'var(--charcoal)',
                         borderBottom: '1px solid rgba(138,155,142,0.08)',
                         background: gi % 2 === 0 ? 'rgba(138,155,142,0.02)' : 'transparent',
                         transition: 'background 0.15s'
@@ -4080,17 +4403,13 @@ function App() {
             </button>
           ))}
 
-          {/* Bloom tab with hover dropdown */}
+          {/* Grove tab with click dropdown */}
           <div
             style={{ position: 'relative' }}
-            onMouseEnter={() => setBloomDropdown(true)}
-            onMouseLeave={() => setBloomDropdown(false)}
           >
             <button
               onClick={() => {
-                if (selectedObjective) {
-                  setCurrentView('bloom');
-                } else {
+                if (objectives.length > 0) {
                   setBloomDropdown(!bloomDropdown);
                 }
               }}
@@ -4109,10 +4428,14 @@ function App() {
                 alignItems: 'center',
                 gap: '4px'
               }}>
-              Bloom <span style={{ fontSize: '10px', opacity: 0.7 }}>▾</span>
+              Grove <span style={{ fontSize: '10px', opacity: 0.7, transform: bloomDropdown ? 'rotate(180deg)' : 'none', display: 'inline-block', transition: 'transform 0.2s' }}>▾</span>
             </button>
 
             {bloomDropdown && objectives.length > 0 && (
+              <>
+              <div onClick={() => setBloomDropdown(false)} style={{
+                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 199
+              }} />
               <div style={{
                 position: 'absolute',
                 top: '100%',
@@ -4181,6 +4504,7 @@ function App() {
                   );
                 })}
               </div>
+              </>
             )}
           </div>
         </div>
@@ -4299,7 +4623,7 @@ function App() {
           { id: 'present', label: 'Present', icon: '✿' },
           { id: 'garden', label: 'Garden', icon: '❋' },
           { id: 'timeline', label: 'Timeline', icon: '▦' },
-          { id: 'bloom', label: 'Bloom', icon: '✦' },
+          { id: 'bloom', label: 'Grove', icon: '✦' },
           { id: 'settings', label: 'Settings', icon: '⚙' }
         ].map(t => {
           let badge = null;
@@ -4415,9 +4739,10 @@ function App() {
       <AddPlanModal
         isOpen={showAddPlan}
         onClose={() => setShowAddPlan(false)}
-        onAdd={({ title, owner, targetDate, startDate }) => {
+        existingPlans={selectedObjective ? selectedObjective.plans : []}
+        onAdd={({ title, owner, targetDate, startDate, phase, dependsOn }) => {
           if (selectedObjective) {
-            const newPlan = createPlan(title, STATUS.SEED, owner, 0, targetDate, startDate);
+            const newPlan = createPlan(title, STATUS.SEED, owner, 0, targetDate, startDate, phase || 1, dependsOn || []);
             const updated = {
               ...selectedObjective,
               plans: [...selectedObjective.plans, newPlan]
